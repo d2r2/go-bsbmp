@@ -8,8 +8,8 @@ import (
 
 // Comment INFO and uncomment DEBUG if you want detail debug output in library.
 var log *logging.Logger = buildLogger("bmp",
-	logging.DEBUG,
-	// logging.INFO,
+	// logging.DEBUG,
+	logging.INFO,
 )
 
 var terminalBackend logging.LeveledBackend = nil
