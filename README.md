@@ -1,10 +1,15 @@
-Bosch Sensortec BMP180, BMP280 temperature and pressure sensors
-===============================================================
+Bosch Sensortec BMP180, BMP280 temperature and atmospheric pressure sensors
+===========================================================================
+
+[![Build Status](https://travis-ci.org/d2r2/go-bsbmp.svg?branch=master)](https://travis-ci.org/d2r2/go-bsbmp)
+[![Go Report Card](https://goreportcard.com/badge/github.com/d2r2/go-bsbmp)](https://goreportcard.com/report/github.com/d2r2/go-bsbmp)
+[![GoDoc](https://godoc.org/github.com/d2r2/go-bsbmp?status.svg)](https://godoc.org/github.com/d2r2/go-bsbmp)
+[![MIT License](http://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
 BMP180 and BMP280 are populare sensors among Arduino and Raspberry PI developers.
 Both sensors are small and quite accurate working via i2c bus interface: (photos)
 
-Here is a library written in [Go programming language](https://golang.org/) for Raspberry PI and counterparts, which gives you in the output temperature and atmosphere pressure values (making all necessary i2c-bus interracting and values computnig).
+Here is a library written in [Go programming language](https://golang.org/) for Raspberry PI and counterparts, which gives you in the output temperature and atmospheric pressure values (making all necessary i2c-bus interracting and values computnig).
 
 Golang usage
 ------------
