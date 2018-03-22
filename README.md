@@ -10,7 +10,7 @@ BMP180 ([pdf reference](https://raw.github.com/d2r2/go-bsbmp/master/docs/BST-BMP
 Both sensors are small and quite accurate working via i2c bus interface:
 ![image](https://raw.github.com/d2r2/go-bsbmp/master/docs/bmp180_bmp280_1.jpg)
 
-Here is a library written in [Go programming language](https://golang.org/) for Raspberry PI and counterparts, which gives you in the output temperature and atmospheric pressure values (making all necessary i2c-bus interracting and values computnig).
+Here is a library written in [Go programming language](https://golang.org/) for Raspberry PI and counterparts, which gives you in the output temperature and atmospheric pressure values (making all necessary i2c-bus interracting and values computing).
 
 Golang usage
 ------------
