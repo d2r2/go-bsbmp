@@ -33,25 +33,25 @@ func main() {
 	// Uncomment to get verbose output
 	// sensor.SetDebug(true)
 
-	// Read temperature in celcius degree
+	// Read temperature in celsius degree
 	t, err := sensor.ReadTemperatureC(bsbmp.ACCURACY_STANDARD)
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Printf("Temprature = %v*C\n", t)
-	// Read atmosphere pressure in pascal
+	// Read atmospheric pressure in pascal
 	p, err := sensor.ReadPressurePa(bsbmp.ACCURACY_STANDARD)
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Printf("Pressure = %v Pa\n", p)
-	// Read atmosphere pressure in mmHg
+	// Read atmospheric pressure in mmHg
 	p1, err := sensor.ReadPressureMmHg(bsbmp.ACCURACY_STANDARD)
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Printf("Pressure = %v mmHg\n", p1)
-	// Read atmosphere altitude in meters
+	// Read atmospheric altitude in meters
 	a, err := sensor.ReadAltitude(bsbmp.ACCURACY_STANDARD)
 	if err != nil {
 		log.Fatal(err)
