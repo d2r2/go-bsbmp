@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/d2r2/go-bmp"
+	"github.com/d2r2/go-bsbmp"
 	"github.com/d2r2/go-i2c"
 )
 
