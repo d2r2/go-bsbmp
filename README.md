@@ -4,13 +4,13 @@ Bosch Sensortec BMP180, BMP280 temperature and pressure sensors
 BMP180 and BMP280 are populare sensors among Arduino and Raspberry PI developers.
 Both sensors are small and quite accurate working via i2c bus interface: (photos)
 
-Here is a code written in [Go programming language](https://golang.org/) for Raspberry PI and counterparts, which gives you in the output temperature and atmosphere pressure values (making all necessary signal processing via i2c-bus behind the scene).
+Here is a library written in [Go programming language](https://golang.org/) for Raspberry PI and counterparts, which gives you in the output temperature and atmosphere pressure values (making all necessary i2c-bus interracting and values computnig).
 
 Golang usage
----------------
+------------
 
 
-```
+```go
 func main() {
 	// Use i2cdetect utility to find device address at i2c-bus
 	i2c, err := i2c.NewI2C(0x76, 1)
@@ -54,7 +54,6 @@ func main() {
 }
 ```
 
-Use i2cdetect utility in format i2cdetect -y X, where X vary from 0 to 5 or more, to discover address occupied by device. To install utility you should run apt install i2c-tools on debian-kind system.
 
 Getting help
 ------------
@@ -67,6 +66,27 @@ Installation
 ```bash
 $ go get -u github.com/d2r2/go-bsbmp
 ```
+
+Troubleshoting
+--------------
+
+- If you employ RaspberryPI, use raspi-config utility to activate i2c-bus on the OS level.
+Go to "Interfaceing Options" menu, to active I2C bus. Restart will require.
+- Use i2cdetect utility in format "i2cdetect -y X", where X may vary from 0 to 5 or more,
+to discover address occupied by device. To install utility you should run
+`apt install i2c-tools` on debian-kind system. `i2detect -y 1` sample output:
+```
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+00:          -- -- -- -- -- -- -- -- -- -- -- -- -- 
+10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+70: -- -- -- -- -- -- 76 --    
+```
+
 
 License
 -------
