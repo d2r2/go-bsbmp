@@ -8,19 +8,22 @@ import (
 )
 
 func main() {
+	// Use i2cdetect utility to find device address at i2c-bus
 	i2c, err := i2c.NewI2C(0x76, 1)
 	// i2c, err := i2c.NewI2C(0x77, 1)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer i2c.Close()
-	// i2c.Debug = true
+	// Uncomment to get verbose output
+	// i2c.SetDebug(true)
 
 	// sensor, err := bsbmp.NewBMP(bsbmp.BMP180_TYPE, i2c)
 	sensor, err := bsbmp.NewBMP(bsbmp.BMP280_TYPE, i2c)
 	if err != nil {
 		log.Fatal(err)
 	}
+	// Uncomment to get verbose output
 	// sensor.SetDebug(true)
 
 	err = sensor.IsValidCoefficients()
