@@ -7,7 +7,8 @@ Bosch Sensortec BMP180, BMP280 temperature and atmospheric pressure sensors
 [![MIT License](http://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
 BMP180 ([pdf reference](https://raw.github.com/d2r2/go-bsbmp/master/docs/BST-BMP180-DS000-09.pdf.pdf)) and BMP280 ([pdf reference](https://raw.github.com/d2r2/go-bsbmp/master/docs/BST-BMP280-DS001-11.pdf.pdf)) are populare sensors among Arduino and Raspberry PI developers.
-Both sensors are small and quite accurate working via i2c bus interface: (photos)
+Both sensors are small and quite accurate working via i2c bus interface:
+![image](https://raw.github.com/d2r2/go-bsbmp/master/docs/bmp180_bmp280_1.jpg)
 
 Here is a library written in [Go programming language](https://golang.org/) for Raspberry PI and counterparts, which gives you in the output temperature and atmospheric pressure values (making all necessary i2c-bus interracting and values computnig).
 
@@ -84,13 +85,13 @@ to discover address occupied by device. To install utility you should run
 `apt install i2c-tools` on debian-kind system. `i2detect -y 1` sample output:
 ```
      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
-00:          -- -- -- -- -- -- -- -- -- -- -- -- -- 
-10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
-20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
-30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
-40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
-50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
-60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+00:          -- -- -- -- -- -- -- -- -- -- -- -- --
+10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 70: -- -- -- -- -- -- 76 --    
 ```
 
