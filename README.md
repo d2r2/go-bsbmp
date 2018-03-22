@@ -99,4 +99,4 @@ to discover address occupied by device. To install utility you should run
 License
 -------
 
-Go-dht is licensed under MIT License.
+Go-bsbmp is licensed under MIT License.
