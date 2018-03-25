@@ -20,7 +20,8 @@ type BMP180 struct {
 	md  int16
 }
 
-// Static cast to verify that type implement interface.
+// Static cast to verify at compile time
+// that type implement interface.
 var _ SensorInterface = &BMP180{}
 
 // Read compensation coefficients, unique for each sensor.
@@ -44,6 +45,8 @@ func (this *BMP180) ReadCoefficients(i2c *i2c.I2C) error {
 	return nil
 }
 
+// Verify that compensate registers are not empty,
+// and thus are valid.
 func (this *BMP180) IsValidCoefficients() error {
 	err := checkCoefficient(uint16(this.ac1), "AC1")
 	if err != nil {
@@ -92,6 +95,8 @@ func (this *BMP180) IsValidCoefficients() error {
 	return nil
 }
 
+// GetSensorSignature return constant signature
+// correspond to this type of sensors.
 func (this *BMP180) GetSensorSignature() uint8 {
 	var signature byte = 0x55
 	return signature
@@ -125,28 +130,6 @@ func (this *BMP180) readUncompTemp(i2c *i2c.I2C) (int32, error) {
 		return 0, err
 	}
 	return int32(w), nil
-}
-
-// Read and calculate temrature in C (celsius).
-func (this *BMP180) ReadTemperatureMult100C(i2c *i2c.I2C, mode AccuracyMode) (int32, error) {
-	ut, err := this.readUncompTemp(i2c)
-	if err != nil {
-		return 0, err
-	}
-	err = this.ReadCoefficients(i2c)
-	if err != nil {
-		return 0, err
-	}
-	// Calculate temperature according to sensor specification
-	x1 := ((ut - int32(this.ac6)) * int32(this.ac5)) >> 15
-	lg.Debugf("x1=%v", x1)
-	x2 := (int32(this.mc) << 11) / (x1 + int32(this.md))
-	lg.Debugf("x2=%v", x2)
-	b5 := x1 + x2
-	lg.Debugf("b5=%v", b5)
-	t := ((b5 + 8) >> 4) * 10
-	lg.Debugf("t=%v", t)
-	return t, nil
 }
 
 func (this *BMP180) getOversamplingRation(accuracy AccuracyMode) byte {
@@ -184,7 +167,31 @@ func (this *BMP180) readUncompPressure(i2c *i2c.I2C, accuracy AccuracyMode) (int
 	return up, nil
 }
 
-// Read and calculate atmospheric pressure in Pa (Pascal).
+// Read and calculate temprature in C (celsius) multipled by 100.
+// Multiplication approach allow to keep result as integer amount.
+func (this *BMP180) ReadTemperatureMult100C(i2c *i2c.I2C, mode AccuracyMode) (int32, error) {
+	ut, err := this.readUncompTemp(i2c)
+	if err != nil {
+		return 0, err
+	}
+	err = this.ReadCoefficients(i2c)
+	if err != nil {
+		return 0, err
+	}
+	// Calculate temperature according to sensor specification
+	x1 := ((ut - int32(this.ac6)) * int32(this.ac5)) >> 15
+	lg.Debugf("x1=%v", x1)
+	x2 := (int32(this.mc) << 11) / (x1 + int32(this.md))
+	lg.Debugf("x2=%v", x2)
+	b5 := x1 + x2
+	lg.Debugf("b5=%v", b5)
+	t := ((b5 + 8) >> 4) * 10
+	lg.Debugf("t=%v", t)
+	return t, nil
+}
+
+// Read and calculate atmospheric pressure in Pa (Pascal) multiplied by 10.
+// Multiplication approach allow to keep result as integer amount.
 func (this *BMP180) ReadPressureMult10Pa(i2c *i2c.I2C, accuracy AccuracyMode) (int32, error) {
 	oss := this.getOversamplingRation(accuracy)
 	ut, err := this.readUncompTemp(i2c)

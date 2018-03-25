@@ -21,7 +21,8 @@ type BMP280 struct {
 	p9 int16
 }
 
-// Static cast to verify that type implement interface.
+// Static cast to verify at compile time
+// that type implement interface.
 var _ SensorInterface = &BMP280{}
 
 // Read compensation coefficients, unique for each sensor.
@@ -46,6 +47,8 @@ func (this *BMP280) ReadCoefficients(i2c *i2c.I2C) error {
 	return nil
 }
 
+// Verify that compensate registers are not empty,
+// and thus are valid.
 func (this *BMP280) IsValidCoefficients() error {
 	err := checkCoefficient(this.t1, "dig_T1")
 	if err != nil {
@@ -98,12 +101,14 @@ func (this *BMP280) IsValidCoefficients() error {
 	return nil
 }
 
+// GetSensorSignature return constant signature
+// correspond to this type of sensors.
 func (this *BMP280) GetSensorSignature() uint8 {
 	var signature byte = 0x58
 	return signature
 }
 
-// Read register 0xF4 for "busy" flag, according to sensor specification.
+// Read register 0xF3 for "busy" flag, according to sensor specification.
 func (this *BMP280) IsBusy(i2c *i2c.I2C) (busy bool, err error) {
 	// Check flag to know status of calculation, according
 	// to specification about SCO (Start of conversion) flag
@@ -200,7 +205,8 @@ func (this *BMP280) readUncompTempratureAndPressure(i2c *i2c.I2C,
 	return ut, up, nil
 }
 
-// Read and calculate temrature in C (celsius).
+// Read and calculate temrature in C (celsius) multiplied by 100.
+// Multiplication approach allow to keep result as integer amount.
 func (this *BMP280) ReadTemperatureMult100C(i2c *i2c.I2C, accuracy AccuracyMode) (int32, error) {
 	ut, err := this.readUncompTemprature(i2c, accuracy)
 	if err != nil {
@@ -221,7 +227,8 @@ func (this *BMP280) ReadTemperatureMult100C(i2c *i2c.I2C, accuracy AccuracyMode)
 	return t, nil
 }
 
-// Read and calculate atmospheric pressure in Pa (Pascal).
+// Read and calculate atmospheric pressure in Pa (Pascal) multiplied by 10.
+// Multiplication approach allow to keep result as integer amount.
 func (this *BMP280) ReadPressureMult10Pa(i2c *i2c.I2C, accuracy AccuracyMode) (int32, error) {
 	ut, up, err := this.readUncompTempratureAndPressure(i2c, accuracy)
 	if err != nil {

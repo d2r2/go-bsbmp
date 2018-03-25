@@ -31,7 +31,7 @@ const (
 )
 
 // Accuracy mode for calculation of atmospheric pressure and temprature.
-// Affect to value accuracy, calculation time frame and power consumption.
+// Impact to value accuracy, calculation time frame and power consumption.
 type AccuracyMode int
 
 const (
