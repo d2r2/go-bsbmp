@@ -6,7 +6,7 @@ Bosch Sensortec BMP180, BMP280 temperature and atmospheric pressure sensors
 [![GoDoc](https://godoc.org/github.com/d2r2/go-bsbmp?status.svg)](https://godoc.org/github.com/d2r2/go-bsbmp)
 [![MIT License](http://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-BMP180 ([pdf reference](https://raw.github.com/d2r2/go-bsbmp/master/docs/BST-BMP180-DS000-09.pdf.pdf)) and BMP280 ([pdf reference](https://raw.github.com/d2r2/go-bsbmp/master/docs/BST-BMP280-DS001-11.pdf.pdf)) are populare sensors among Arduino and Raspberry PI developers.
+BMP180 ([pdf reference](https://raw.github.com/d2r2/go-bsbmp/master/docs/BST-BMP180-DS000-09.pdf)) and BMP280 ([pdf reference](https://raw.github.com/d2r2/go-bsbmp/master/docs/BST-BMP280-DS001-11.pdf)) are populare sensors among Arduino and Raspberry PI developers.
 Both sensors are small and quite accurately measuring, working via i2c bus interface:
 ![image](https://raw.github.com/d2r2/go-bsbmp/master/docs/bmp180_bmp280_1.jpg)
 
