@@ -139,7 +139,8 @@ func NewBMP(sensorType SensorType, i2c *i2c.I2C) (*BMP, error) {
 	return v, nil
 }
 
-// Read compensation coefficients, which unique for each sensor.
+// Read sensor signature. It may be used for validation,
+// that proper code settings used for sensor data decoding.
 func (this *BMP) readSensorID() error {
 	var err error
 	this.id, err = this.i2c.ReadRegU8(ID_REG)
@@ -153,7 +154,8 @@ func (this *BMP) IsValidCoefficients() error {
 	return this.bmp.IsValidCoefficients()
 }
 
-// Read and calculate temrature in C (celsius).
+// Read and calculate temrature in C (celsius) multiplied by 100.
+// Multiplication approach allow to keep result as integer amount.
 func (this *BMP) ReadTemperatureMult100C(accuracy AccuracyMode) (int32, error) {
 	t, err := this.bmp.ReadTemperatureMult100C(this.i2c, accuracy)
 	return t, err
@@ -168,7 +170,8 @@ func (this *BMP) ReadTemperatureC(accuracy AccuracyMode) (float32, error) {
 	return float32(t) / 100, nil
 }
 
-// Read and calculate atmospheric pressure in Pa (Pascal).
+// Read and calculate atmospheric pressure in Pa (Pascal) multiplied by 10.
+// Multiplication approach allow to keep result as integer amount.
 func (this *BMP) ReadPressureMult10Pa(accuracy AccuracyMode) (int32, error) {
 	p, err := this.bmp.ReadPressureMult10Pa(this.i2c, accuracy)
 	return p, err
