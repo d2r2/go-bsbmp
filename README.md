@@ -65,7 +65,7 @@ func main() {
 Getting help
 ------------
 
-GoDoc [documentation](http://godoc.org/github.com/d2r2/go-hd44780)
+GoDoc [documentation](http://godoc.org/github.com/d2r2/go-bsbmp)
 
 Installation
 ------------
