@@ -2,9 +2,7 @@ package bsbmp
 
 import (
 	"fmt"
-	"log"
 	"math"
-	"os"
 
 	"github.com/d2r2/go-i2c"
 )
@@ -97,7 +95,6 @@ const (
 // Abstract BMPx sensor interface
 // to control and gather data.
 type SensorInterface interface {
-	SetDebug(debug bool)
 	ReadCoefficients(i2c *i2c.I2C) error
 	IsValidCoefficients() error
 	GetSensorSignature() uint8
@@ -114,10 +111,6 @@ type BMP struct {
 	bmp        SensorInterface
 	// Sensor id
 	id uint8
-	// Logger
-	log *log.Logger
-	// Enable verbose output
-	debug bool
 }
 
 // Create new sensor object.
@@ -125,9 +118,9 @@ func NewBMP(sensorType SensorType, i2c *i2c.I2C) (*BMP, error) {
 	v := &BMP{sensorType: sensorType, i2c: i2c}
 	switch sensorType {
 	case BMP180_TYPE:
-		v.bmp = &BMP180{log: v.getLogger()}
+		v.bmp = &BMP180{}
 	case BMP280_TYPE:
-		v.bmp = &BMP280{log: v.getLogger()}
+		v.bmp = &BMP280{}
 	}
 
 	err := v.readSensorID()
@@ -146,20 +139,6 @@ func NewBMP(sensorType SensorType, i2c *i2c.I2C) (*BMP, error) {
 	return v, nil
 }
 
-func (this *BMP) getLogger() *log.Logger {
-	if this.log == nil {
-		this.log = log.New(os.Stdout, "", log.LstdFlags)
-	}
-	return this.log
-}
-
-func (this *BMP) debugf(format string, args ...interface{}) {
-	if this.debug {
-		lg := this.getLogger()
-		lg.Printf("[bmp] DEBUG "+format, args...)
-	}
-}
-
 // Read compensation coefficients, which unique for each sensor.
 func (this *BMP) readSensorID() error {
 	var err error
@@ -168,11 +147,6 @@ func (this *BMP) readSensorID() error {
 		return err
 	}
 	return nil
-}
-
-func (this *BMP) SetDebug(debug bool) {
-	this.debug = debug
-	this.bmp.SetDebug(debug)
 }
 
 func (this *BMP) IsValidCoefficients() error {

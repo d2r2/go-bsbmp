@@ -18,20 +18,21 @@ Golang usage
 
 ```go
 func main() {
-	// Use i2cdetect utility to find device address at i2c-bus
+	// Use i2cdetect utility to find device address over the i2c-bus
 	i2c, err := i2c.NewI2C(0x76, 1)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer i2c.Close()
-	// Uncomment to get verbose output
-	// i2c.SetDebug(true)
+	// Uncomment next line to supress verbose output
+	//logger.ChangePackageLogLevel("i2c", logger.InfoLevel)
+
 	sensor, err := bsbmp.NewBMP(bsbmp.BMP280_TYPE, i2c)
 	if err != nil {
 		log.Fatal(err)
 	}
-	// Uncomment to get verbose output
-	// sensor.SetDebug(true)
+	// Uncomment next line to supress verbose output
+	//logger.ChangePackageLogLevel("bsbmp", logger.InfoLevel)
 
 	// Read temperature in celsius degree
 	t, err := sensor.ReadTemperatureC(bsbmp.ACCURACY_STANDARD)

@@ -1,8 +1,6 @@
 package bsbmp
 
 import (
-	"log"
-
 	i2c "github.com/d2r2/go-i2c"
 )
 
@@ -20,25 +18,10 @@ type BMP180 struct {
 	mb  int16
 	mc  int16
 	md  int16
-	// Logger
-	log *log.Logger
-	// Enable verbose output
-	debug bool
 }
 
 // Static cast to verify that type implement interface.
 var _ SensorInterface = &BMP180{}
-
-func (this *BMP180) debugf(format string, args ...interface{}) {
-	if this.debug {
-		lg := this.log
-		lg.Printf("[bmp] DEBUG "+format, args...)
-	}
-}
-
-func (this *BMP180) SetDebug(debug bool) {
-	this.debug = debug
-}
 
 // Read compensation coefficients, unique for each sensor.
 func (this *BMP180) ReadCoefficients(i2c *i2c.I2C) error {
@@ -123,7 +106,7 @@ func (this *BMP180) IsBusy(i2c *i2c.I2C) (busy bool, err error) {
 		return false, err
 	}
 	b = b & 0x20
-	this.debugf("Busy flag=0x%0X", b)
+	lg.Debugf("Busy flag=0x%0X", b)
 	return b != 0, nil
 }
 
@@ -156,13 +139,13 @@ func (this *BMP180) ReadTemperatureMult100C(i2c *i2c.I2C, mode AccuracyMode) (in
 	}
 	// Calculate temperature according to sensor specification
 	x1 := ((ut - int32(this.ac6)) * int32(this.ac5)) >> 15
-	this.debugf("x1=%v", x1)
+	lg.Debugf("x1=%v", x1)
 	x2 := (int32(this.mc) << 11) / (x1 + int32(this.md))
-	this.debugf("x2=%v", x2)
+	lg.Debugf("x2=%v", x2)
 	b5 := x1 + x2
-	this.debugf("b5=%v", b5)
+	lg.Debugf("b5=%v", b5)
 	t := ((b5 + 8) >> 4) * 10
-	this.debugf("t=%v", t)
+	lg.Debugf("t=%v", t)
 	return t, nil
 }
 
@@ -184,7 +167,7 @@ func (this *BMP180) getOversamplingRation(accuracy AccuracyMode) byte {
 // Read atmospheric uncompensated pressure from sensor.
 func (this *BMP180) readUncompPressure(i2c *i2c.I2C, accuracy AccuracyMode) (int32, error) {
 	oss := this.getOversamplingRation(accuracy)
-	this.debugf("oss=%v", oss)
+	lg.Debugf("oss=%v", oss)
 	err := i2c.WriteRegU8(BMP180_CNTR_MEAS_REG, 0x34+(oss<<6))
 	if err != nil {
 		return 0, err
@@ -208,13 +191,13 @@ func (this *BMP180) ReadPressureMult10Pa(i2c *i2c.I2C, accuracy AccuracyMode) (i
 	if err != nil {
 		return 0, err
 	}
-	this.debugf("ut=%v", ut)
+	lg.Debugf("ut=%v", ut)
 
 	up, err := this.readUncompPressure(i2c, accuracy)
 	if err != nil {
 		return 0, err
 	}
-	this.debugf("up=%v", up)
+	lg.Debugf("up=%v", up)
 
 	err = this.ReadCoefficients(i2c)
 	if err != nil {
@@ -223,46 +206,46 @@ func (this *BMP180) ReadPressureMult10Pa(i2c *i2c.I2C, accuracy AccuracyMode) (i
 
 	// Calculate pressure according to sensor specification
 	x1 := ((ut - int32(this.ac6)) * int32(this.ac5)) >> 15
-	this.debugf("x1=%v", x1)
+	lg.Debugf("x1=%v", x1)
 	x2 := (int32(this.mc) << 11) / (x1 + int32(this.md))
-	this.debugf("x2=%v", x2)
+	lg.Debugf("x2=%v", x2)
 	b5 := x1 + x2
-	this.debugf("b5=%v", b5)
+	lg.Debugf("b5=%v", b5)
 	b6 := b5 - 4000
-	this.debugf("b6=%v", b6)
+	lg.Debugf("b6=%v", b6)
 	x1 = (int32(this.b2) * ((b6 * b6) >> 12)) >> 11
-	this.debugf("x1=%v", x1)
+	lg.Debugf("x1=%v", x1)
 	x2 = (int32(this.ac2) * b6) >> 11
-	this.debugf("x2=%v", x2)
+	lg.Debugf("x2=%v", x2)
 	x3 := x1 + x2
-	this.debugf("x3=%v", x3)
+	lg.Debugf("x3=%v", x3)
 	b3 := (((int32(this.ac1)*4 + x3) << uint32(oss)) + 2) / 4
-	this.debugf("b3=%v", b3)
+	lg.Debugf("b3=%v", b3)
 	x1 = (int32(this.ac3) * b6) >> 13
-	this.debugf("x1=%v", x1)
+	lg.Debugf("x1=%v", x1)
 	x2 = ((int32(this.b1) * (b6 * b6)) >> 12) >> 16
-	this.debugf("x2=%v", x2)
+	lg.Debugf("x2=%v", x2)
 	x3 = ((x1 + x2) + 2) >> 2
-	this.debugf("x3=%v", x3)
+	lg.Debugf("x3=%v", x3)
 	b4 := (uint32(this.ac4) * uint32(x3+32768)) >> 15
-	this.debugf("b4=%v", b4)
+	lg.Debugf("b4=%v", b4)
 	b7 := (uint32(up) - uint32(b3)) * (50000 >> uint32(oss))
-	this.debugf("b7=%v", b7)
+	lg.Debugf("b7=%v", b7)
 	var p1 int32
 	if b7 < 0x80000000 {
 		p1 = int32((b7 * 2) / b4)
 	} else {
 		p1 = int32((b7 / b4) * 2)
 	}
-	this.debugf("p=%v", p1)
+	lg.Debugf("p=%v", p1)
 	x1 = (p1 >> 8) * (p1 >> 8)
-	this.debugf("x1=%v", x1)
+	lg.Debugf("x1=%v", x1)
 	x1 = (x1 * 3038) >> 16
-	this.debugf("x1=%v", x1)
+	lg.Debugf("x1=%v", x1)
 	x2 = (-7357 * p1) >> 16
-	this.debugf("x2=%v", x2)
+	lg.Debugf("x2=%v", x2)
 	p1 += (x1 + x2 + 3791) >> 4
-	this.debugf("p=%v", p1)
+	lg.Debugf("p=%v", p1)
 	p := p1 * 10
 	return p, nil
 }

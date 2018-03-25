@@ -1,8 +1,6 @@
 package bsbmp
 
 import (
-	"log"
-
 	i2c "github.com/d2r2/go-i2c"
 )
 
@@ -21,25 +19,10 @@ type BMP280 struct {
 	p7 int16
 	p8 int16
 	p9 int16
-	// Logger
-	log *log.Logger
-	// Enable verbose output
-	debug bool
 }
 
 // Static cast to verify that type implement interface.
 var _ SensorInterface = &BMP280{}
-
-func (this *BMP280) debugf(format string, args ...interface{}) {
-	if this.debug {
-		lg := this.log
-		lg.Printf("[bmp] DEBUG "+format, args...)
-	}
-}
-
-func (this *BMP280) SetDebug(debug bool) {
-	this.debug = debug
-}
 
 // Read compensation coefficients, unique for each sensor.
 func (this *BMP280) ReadCoefficients(i2c *i2c.I2C) error {
@@ -129,7 +112,7 @@ func (this *BMP280) IsBusy(i2c *i2c.I2C) (busy bool, err error) {
 		return false, err
 	}
 	b = b & 0x8
-	this.debugf("Busy flag=0x%0X", b)
+	lg.Debugf("Busy flag=0x%0X", b)
 	return b != 0, nil
 }
 
@@ -151,10 +134,10 @@ func (this *BMP280) getOversamplingRation(accuracy AccuracyMode) byte {
 }
 
 // Read uncompensated temprature from sensor.
-func (this *BMP280) readUncompTemp(i2c *i2c.I2C, accuracy AccuracyMode) (int32, error) {
+func (this *BMP280) readUncompTemprature(i2c *i2c.I2C, accuracy AccuracyMode) (int32, error) {
 	var power byte = 1 // Forced mode
-	osr := this.getOversamplingRation(accuracy)
-	err := i2c.WriteRegU8(BMP280_CNTR_MEAS_REG, power|(osr<<5))
+	osrt := this.getOversamplingRation(accuracy)
+	err := i2c.WriteRegU8(BMP280_CNTR_MEAS_REG, power|(osrt<<5))
 	if err != nil {
 		return 0, err
 	}
@@ -170,32 +153,11 @@ func (this *BMP280) readUncompTemp(i2c *i2c.I2C, accuracy AccuracyMode) (int32, 
 	return ut, nil
 }
 
-// Read and calculate temrature in C (celsius).
-func (this *BMP280) ReadTemperatureMult100C(i2c *i2c.I2C, accuracy AccuracyMode) (int32, error) {
-	ut, err := this.readUncompTemp(i2c, accuracy)
-	if err != nil {
-		return 0, err
-	}
-	err = this.ReadCoefficients(i2c)
-	if err != nil {
-		return 0, err
-	}
-
-	var1 := ((ut>>3 - int32(this.t1)<<1) * int32(this.t2)) >> 11
-	this.debugf("var1=%v", var1)
-	var2 := (((ut>>4 - int32(this.t1)) * (ut>>4 - int32(this.t1))) >> 12 * int32(this.t3)) >> 14
-	this.debugf("var1=%v", var2)
-	t_fine := var1 + var2
-	this.debugf("t_fine=%v", t_fine)
-	t := (t_fine*5 + 128) >> 8
-	return t, nil
-}
-
 // Read atmospheric uncompensated pressure from sensor.
 func (this *BMP280) readUncompPressure(i2c *i2c.I2C, accuracy AccuracyMode) (int32, error) {
 	var power byte = 1 // Forced mode
-	osr := this.getOversamplingRation(accuracy)
-	err := i2c.WriteRegU8(BMP280_CNTR_MEAS_REG, power|(osr<<2))
+	osrp := this.getOversamplingRation(accuracy)
+	err := i2c.WriteRegU8(BMP280_CNTR_MEAS_REG, power|(osrp<<2))
 	if err != nil {
 		return 0, err
 	}
@@ -211,19 +173,61 @@ func (this *BMP280) readUncompPressure(i2c *i2c.I2C, accuracy AccuracyMode) (int
 	return up, nil
 }
 
+// Read temprature and atmospheric uncompensated pressure from sensor.
+func (this *BMP280) readUncompTempratureAndPressure(i2c *i2c.I2C,
+	accuracy AccuracyMode) (temprature int32, pressure int32, err error) {
+	var power byte = 1 // Forced mode
+	osrt := this.getOversamplingRation(ACCURACY_STANDARD)
+	osrp := this.getOversamplingRation(accuracy)
+	err = i2c.WriteRegU8(BMP280_CNTR_MEAS_REG, power|(osrt<<5)|(osrp<<2))
+	if err != nil {
+		return 0, 0, err
+	}
+	_, err = waitForCompletion(this, i2c)
+	if err != nil {
+		return 0, 0, err
+	}
+	buf, _, err := i2c.ReadRegBytes(BMP280_TEMP_OUT_MSB_LSB_XLSB, 3)
+	if err != nil {
+		return 0, 0, err
+	}
+	ut := int32(buf[0])<<12 + int32(buf[1])<<4 + int32(buf[2]&0xF0)>>4
+	buf, _, err = i2c.ReadRegBytes(BMP280_PRESS_OUT_MSB_LSB_XLSB, 3)
+	if err != nil {
+		return 0, 0, err
+	}
+	up := int32(buf[0])<<12 + int32(buf[1])<<4 + int32(buf[2]&0xF0)>>4
+	return ut, up, nil
+}
+
+// Read and calculate temrature in C (celsius).
+func (this *BMP280) ReadTemperatureMult100C(i2c *i2c.I2C, accuracy AccuracyMode) (int32, error) {
+	ut, err := this.readUncompTemprature(i2c, accuracy)
+	if err != nil {
+		return 0, err
+	}
+	err = this.ReadCoefficients(i2c)
+	if err != nil {
+		return 0, err
+	}
+
+	var1 := ((ut>>3 - int32(this.t1)<<1) * int32(this.t2)) >> 11
+	lg.Debugf("var1=%v", var1)
+	var2 := (((ut>>4 - int32(this.t1)) * (ut>>4 - int32(this.t1))) >> 12 * int32(this.t3)) >> 14
+	lg.Debugf("var1=%v", var2)
+	t_fine := var1 + var2
+	lg.Debugf("t_fine=%v", t_fine)
+	t := (t_fine*5 + 128) >> 8
+	return t, nil
+}
+
 // Read and calculate atmospheric pressure in Pa (Pascal).
 func (this *BMP280) ReadPressureMult10Pa(i2c *i2c.I2C, accuracy AccuracyMode) (int32, error) {
-	ut, err := this.readUncompTemp(i2c, accuracy)
+	ut, up, err := this.readUncompTempratureAndPressure(i2c, accuracy)
 	if err != nil {
 		return 0, err
 	}
-	this.debugf("ut=%v", ut)
-
-	up, err := this.readUncompPressure(i2c, accuracy)
-	if err != nil {
-		return 0, err
-	}
-	this.debugf("up=%v", up)
+	lg.Debugf("ut=%v, up=%v", ut, up)
 
 	err = this.ReadCoefficients(i2c)
 	if err != nil {
@@ -231,21 +235,21 @@ func (this *BMP280) ReadPressureMult10Pa(i2c *i2c.I2C, accuracy AccuracyMode) (i
 	}
 
 	var01 := ((ut>>3 - int32(this.t1)<<1) * int32(this.t2)) >> 11
-	this.debugf("var01=%v", var01)
+	lg.Debugf("var01=%v", var01)
 	var02 := (((ut>>4 - int32(this.t1)) * (ut>>4 - int32(this.t1))) >> 12 * int32(this.t3)) >> 14
-	this.debugf("var01=%v", var02)
+	lg.Debugf("var01=%v", var02)
 	t_fine := var01 + var02
 
 	var1 := int64(t_fine) - 128000
-	this.debugf("var1=%v", var1)
+	lg.Debugf("var1=%v", var1)
 	var2 := var1 * var1 * int64(this.p6)
-	this.debugf("var2=%v", var2)
+	lg.Debugf("var2=%v", var2)
 	var2 += (var1 * int64(this.p5)) << 17
 	var2 += int64(this.p4) << 35
-	this.debugf("var2=%v", var2)
+	lg.Debugf("var2=%v", var2)
 	var1 = (var1*var1*int64(this.p3))>>8 + (var1*int64(this.p2))<<12
 	var1 = ((int64(1)<<47 + var1) * int64(this.p1)) >> 33
-	this.debugf("var1=%v", var1)
+	lg.Debugf("var1=%v", var1)
 	if var1 == 0 {
 		return 0, nil
 	}
