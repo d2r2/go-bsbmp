@@ -47,8 +47,8 @@ func (this *BMP280) ReadCoefficients(i2c *i2c.I2C) error {
 	return nil
 }
 
-// Verify that compensate registers are not empty,
-// and thus are valid.
+// IsValidCoefficients verify that compensate registers
+// are not empty, and thus are valid.
 func (this *BMP280) IsValidCoefficients() error {
 	err := checkCoefficient(this.t1, "dig_T1")
 	if err != nil {
@@ -101,14 +101,15 @@ func (this *BMP280) IsValidCoefficients() error {
 	return nil
 }
 
-// GetSensorSignature return constant signature
+// GetSensorSignature returns constant signature
 // correspond to this type of sensors.
 func (this *BMP280) GetSensorSignature() uint8 {
 	var signature byte = 0x58
 	return signature
 }
 
-// Read register 0xF3 for "busy" flag, according to sensor specification.
+// IsBusy reads register 0xF3 for "busy" flag,
+// according to sensor specification.
 func (this *BMP280) IsBusy(i2c *i2c.I2C) (busy bool, err error) {
 	// Check flag to know status of calculation, according
 	// to specification about SCO (Start of conversion) flag
@@ -138,7 +139,7 @@ func (this *BMP280) getOversamplingRation(accuracy AccuracyMode) byte {
 	return b
 }
 
-// Read uncompensated temprature from sensor.
+// readUncompTemprature reads uncompensated temprature from sensor.
 func (this *BMP280) readUncompTemprature(i2c *i2c.I2C, accuracy AccuracyMode) (int32, error) {
 	var power byte = 1 // Forced mode
 	osrt := this.getOversamplingRation(accuracy)
@@ -158,7 +159,7 @@ func (this *BMP280) readUncompTemprature(i2c *i2c.I2C, accuracy AccuracyMode) (i
 	return ut, nil
 }
 
-// Read atmospheric uncompensated pressure from sensor.
+// readUncompPressure reads atmospheric uncompensated pressure from sensor.
 func (this *BMP280) readUncompPressure(i2c *i2c.I2C, accuracy AccuracyMode) (int32, error) {
 	var power byte = 1 // Forced mode
 	osrp := this.getOversamplingRation(accuracy)
@@ -178,7 +179,10 @@ func (this *BMP280) readUncompPressure(i2c *i2c.I2C, accuracy AccuracyMode) (int
 	return up, nil
 }
 
-// Read temprature and atmospheric uncompensated pressure from sensor.
+// readUncompTempratureAndPressure reads temprature and
+// atmospheric uncompensated pressure from sensor.
+// BMP280 allows to read temprature and pressure in one cycle,
+// BMP180 - doesn't.
 func (this *BMP280) readUncompTempratureAndPressure(i2c *i2c.I2C,
 	accuracy AccuracyMode) (temprature int32, pressure int32, err error) {
 	var power byte = 1 // Forced mode
@@ -205,7 +209,7 @@ func (this *BMP280) readUncompTempratureAndPressure(i2c *i2c.I2C,
 	return ut, up, nil
 }
 
-// Read and calculate temrature in C (celsius) multiplied by 100.
+// ReadTemperatureMult100C reads and calculates temrature in C (celsius) multiplied by 100.
 // Multiplication approach allow to keep result as integer amount.
 func (this *BMP280) ReadTemperatureMult100C(i2c *i2c.I2C, accuracy AccuracyMode) (int32, error) {
 	ut, err := this.readUncompTemprature(i2c, accuracy)
@@ -227,7 +231,7 @@ func (this *BMP280) ReadTemperatureMult100C(i2c *i2c.I2C, accuracy AccuracyMode)
 	return t, nil
 }
 
-// Read and calculate atmospheric pressure in Pa (Pascal) multiplied by 10.
+// ReadPressureMult10Pa reads and calculates atmospheric pressure in Pa (Pascal) multiplied by 10.
 // Multiplication approach allow to keep result as integer amount.
 func (this *BMP280) ReadPressureMult10Pa(i2c *i2c.I2C, accuracy AccuracyMode) (int32, error) {
 	ut, up, err := this.readUncompTempratureAndPressure(i2c, accuracy)

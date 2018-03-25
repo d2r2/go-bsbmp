@@ -113,7 +113,7 @@ type BMP struct {
 	id uint8
 }
 
-// Create new sensor object.
+// NewBMP creates new sensor object.
 func NewBMP(sensorType SensorType, i2c *i2c.I2C) (*BMP, error) {
 	v := &BMP{sensorType: sensorType, i2c: i2c}
 	switch sensorType {
@@ -123,7 +123,7 @@ func NewBMP(sensorType SensorType, i2c *i2c.I2C) (*BMP, error) {
 		v.bmp = &BMP280{}
 	}
 
-	err := v.readSensorID()
+	err := v.ReadSensorID()
 	if err != nil {
 		return nil, err
 	}
@@ -139,9 +139,9 @@ func NewBMP(sensorType SensorType, i2c *i2c.I2C) (*BMP, error) {
 	return v, nil
 }
 
-// Read sensor signature. It may be used for validation,
+// ReadSensorID reads sensor signature. It may be used for validation,
 // that proper code settings used for sensor data decoding.
-func (this *BMP) readSensorID() error {
+func (this *BMP) ReadSensorID() error {
 	var err error
 	this.id, err = this.i2c.ReadRegU8(ID_REG)
 	if err != nil {
@@ -154,14 +154,14 @@ func (this *BMP) IsValidCoefficients() error {
 	return this.bmp.IsValidCoefficients()
 }
 
-// Read and calculate temrature in C (celsius) multiplied by 100.
+// ReadTemperatureMult100C reads and calculates temrature in C (celsius) multiplied by 100.
 // Multiplication approach allow to keep result as integer amount.
 func (this *BMP) ReadTemperatureMult100C(accuracy AccuracyMode) (int32, error) {
 	t, err := this.bmp.ReadTemperatureMult100C(this.i2c, accuracy)
 	return t, err
 }
 
-// Read and calculate temrature in C (celsius).
+// ReadTemperatureC reads and calculates temrature in C (celsius).
 func (this *BMP) ReadTemperatureC(accuracy AccuracyMode) (float32, error) {
 	t, err := this.bmp.ReadTemperatureMult100C(this.i2c, accuracy)
 	if err != nil {
@@ -170,14 +170,14 @@ func (this *BMP) ReadTemperatureC(accuracy AccuracyMode) (float32, error) {
 	return float32(t) / 100, nil
 }
 
-// Read and calculate atmospheric pressure in Pa (Pascal) multiplied by 10.
+// ReadPressureMult10Pa reads and calculates atmospheric pressure in Pa (Pascal) multiplied by 10.
 // Multiplication approach allow to keep result as integer amount.
 func (this *BMP) ReadPressureMult10Pa(accuracy AccuracyMode) (int32, error) {
 	p, err := this.bmp.ReadPressureMult10Pa(this.i2c, accuracy)
 	return p, err
 }
 
-// Read and calculate atmospheric pressure in Pa (Pascal).
+// ReadPressurePa reads and calculates atmospheric pressure in Pa (Pascal).
 func (this *BMP) ReadPressurePa(accuracy AccuracyMode) (float32, error) {
 	p, err := this.bmp.ReadPressureMult10Pa(this.i2c, accuracy)
 	if err != nil {
@@ -186,7 +186,7 @@ func (this *BMP) ReadPressurePa(accuracy AccuracyMode) (float32, error) {
 	return float32(p) / 10, err
 }
 
-// Read and calculate atmospheric pressure in mmHg (millimeter of mercury).
+// ReadPressureMmHg reads and calculates atmospheric pressure in mmHg (millimeter of mercury).
 func (this *BMP) ReadPressureMmHg(accuracy AccuracyMode) (float32, error) {
 	p, err := this.bmp.ReadPressureMult10Pa(this.i2c, accuracy)
 	if err != nil {
@@ -199,7 +199,7 @@ func (this *BMP) ReadPressureMmHg(accuracy AccuracyMode) (float32, error) {
 	return p2, nil
 }
 
-// Read and calculate altitude above sea level, if we assume
+// ReadAltitude reads and calculates altitude above sea level, if we assume
 // that pressure at see level is equal to 101325 Pa.
 func (this *BMP) ReadAltitude(accuracy AccuracyMode) (float32, error) {
 	p, err := this.bmp.ReadPressureMult10Pa(this.i2c, accuracy)

@@ -24,7 +24,7 @@ type BMP180 struct {
 // that type implement interface.
 var _ SensorInterface = &BMP180{}
 
-// Read compensation coefficients, unique for each sensor.
+// ReadCoefficients read compensation coefficients, unique for each sensor.
 func (this *BMP180) ReadCoefficients(i2c *i2c.I2C) error {
 	var err error
 	buf, _, err := i2c.ReadRegBytes(BMP180_COEF_START, BMP180_COEF_COUNT*2)
@@ -45,8 +45,8 @@ func (this *BMP180) ReadCoefficients(i2c *i2c.I2C) error {
 	return nil
 }
 
-// Verify that compensate registers are not empty,
-// and thus are valid.
+// IsValidCoefficients verify that compensate registers
+// are not empty, and thus are valid.
 func (this *BMP180) IsValidCoefficients() error {
 	err := checkCoefficient(uint16(this.ac1), "AC1")
 	if err != nil {
@@ -95,14 +95,15 @@ func (this *BMP180) IsValidCoefficients() error {
 	return nil
 }
 
-// GetSensorSignature return constant signature
+// GetSensorSignature returns constant signature
 // correspond to this type of sensors.
 func (this *BMP180) GetSensorSignature() uint8 {
 	var signature byte = 0x55
 	return signature
 }
 
-// Read register 0xF4 for "busy" flag, according to sensor specification.
+// IsBusy reads register 0xF4 for "busy" flag,
+// according to sensor specification.
 func (this *BMP180) IsBusy(i2c *i2c.I2C) (busy bool, err error) {
 	// Check flag to know status of calculation, according
 	// to specification about SCO (Start of conversion) flag
@@ -115,7 +116,7 @@ func (this *BMP180) IsBusy(i2c *i2c.I2C) (busy bool, err error) {
 	return b != 0, nil
 }
 
-// Read uncompensated temprature from sensor.
+// readUncompTemp reads uncompensated temprature from sensor.
 func (this *BMP180) readUncompTemp(i2c *i2c.I2C) (int32, error) {
 	err := i2c.WriteRegU8(BMP180_CNTR_MEAS_REG, 0x2F)
 	if err != nil {
@@ -147,7 +148,7 @@ func (this *BMP180) getOversamplingRation(accuracy AccuracyMode) byte {
 	return b
 }
 
-// Read atmospheric uncompensated pressure from sensor.
+// readUncompPressure reads atmospheric uncompensated pressure from sensor.
 func (this *BMP180) readUncompPressure(i2c *i2c.I2C, accuracy AccuracyMode) (int32, error) {
 	oss := this.getOversamplingRation(accuracy)
 	lg.Debugf("oss=%v", oss)
@@ -167,7 +168,7 @@ func (this *BMP180) readUncompPressure(i2c *i2c.I2C, accuracy AccuracyMode) (int
 	return up, nil
 }
 
-// Read and calculate temprature in C (celsius) multipled by 100.
+// ReadTemperatureMult100C reads and calculates temprature in C (celsius) multipled by 100.
 // Multiplication approach allow to keep result as integer amount.
 func (this *BMP180) ReadTemperatureMult100C(i2c *i2c.I2C, mode AccuracyMode) (int32, error) {
 	ut, err := this.readUncompTemp(i2c)
@@ -190,7 +191,7 @@ func (this *BMP180) ReadTemperatureMult100C(i2c *i2c.I2C, mode AccuracyMode) (in
 	return t, nil
 }
 
-// Read and calculate atmospheric pressure in Pa (Pascal) multiplied by 10.
+// ReadPressureMult10Pa reads and calculates atmospheric pressure in Pa (Pascal) multiplied by 10.
 // Multiplication approach allow to keep result as integer amount.
 func (this *BMP180) ReadPressureMult10Pa(i2c *i2c.I2C, accuracy AccuracyMode) (int32, error) {
 	oss := this.getOversamplingRation(accuracy)
