@@ -53,7 +53,8 @@ func main() {
 		log.Fatal(err)
 	}
 	log.Printf("Pressure = %v mmHg\n", p1)
-	// Read atmospheric altitude in meters
+	// Read atmospheric altitude in meters above sea level, if we assume
+	// that pressure at see level is equal to 101325 Pa.
 	a, err := sensor.ReadAltitude(bsbmp.ACCURACY_STANDARD)
 	if err != nil {
 		log.Fatal(err)
