@@ -96,6 +96,11 @@ to discover address occupied by device. To install utility you should run
 70: -- -- -- -- -- -- 76 --    
 ```
 
+Contact
+-------
+
+Please use [Github issue tracker](https://github.com/d2r2/go-bsbmp/issues) for filing bugs or feature requests.
+
 
 License
 -------
