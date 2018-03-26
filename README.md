@@ -77,11 +77,19 @@ $ go get -u github.com/d2r2/go-bsbmp
 Troubleshoting
 --------------
 
-- If your RaspberryPI golang installed by default from repository is outdated, you may consider
-to install actual golang mannualy from official Golang [site](https://golang.org/dl/). Follow installation instructions.
-- If you employ RaspberryPI, use raspi-config utility to activate i2c-bus on the OS level.
+- How to obtain fresh Golang installation to RPi device (either any RPi clone):
+
+If your RaspberryPI golang installed by default from repository is outdated, you may consider
+to install actual golang mannualy from official Golang [site](https://golang.org/dl/). Download
+tar.gz file containing armv6l in the name. Follow installation instructions.
+Finally you should have device like /dev/i2c-1 present in the system.
+
+- How to enable I2C bus on RPi device:
+If you employ RaspberryPI, use raspi-config utility to activate i2c-bus on the OS level.
 Go to "Interfaceing Options" menu, to active I2C bus. Restart will require.
-- Use i2cdetect utility in format "i2cdetect -y X", where X may vary from 0 to 5 or more,
+
+- How to find I2C bus allocation and device address:
+Use i2cdetect utility in format "i2cdetect -y X", where X may vary from 0 to 5 or more,
 to discover address occupied by device. To install utility you should run
 `apt install i2c-tools` on debian-kind system. `i2detect -y 1` sample output:
 ```
