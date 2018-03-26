@@ -78,7 +78,6 @@ Troubleshoting
 --------------
 
 - How to obtain fresh Golang installation to RPi device (either any RPi clone):
-
 If your RaspberryPI golang installed by default from repository is outdated, you may consider
 to install actual golang mannualy from official Golang [site](https://golang.org/dl/). Download
 tar.gz file containing armv6l in the name. Follow installation instructions.
@@ -93,17 +92,17 @@ Finally you should have device like /dev/i2c-1 present in the system.
 Use i2cdetect utility in format "i2cdetect -y X", where X may vary from 0 to 5 or more,
 to discover address occupied by device. To install utility you should run
 `apt install i2c-tools` on debian-kind system. `i2detect -y 1` sample output:
-```
-     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
-00:          -- -- -- -- -- -- -- -- -- -- -- -- --
-10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-70: -- -- -- -- -- -- 76 --    
-```
+	```
+	     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+	00:          -- -- -- -- -- -- -- -- -- -- -- -- --
+	10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+	20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+	30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+	40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+	50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+	60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+	70: -- -- -- -- -- -- 76 --    
+	```
 
 Contact
 -------
