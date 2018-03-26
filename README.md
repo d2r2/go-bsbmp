@@ -80,7 +80,7 @@ Troubleshoting
 --------------
 
 - *How to obtain fresh Golang installation to RPi device (either any RPi clone):*
-If your RaspberryPI golang installed by default from repository is outdated, you may consider
+If your RaspberryPI golang installation taken by default from repository is outdated, you may consider
 to install actual golang mannualy from official Golang [site](https://golang.org/dl/). Download
 tar.gz file containing armv6l in the name. Follow installation instructions.
 
