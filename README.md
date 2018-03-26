@@ -82,11 +82,12 @@ Troubleshoting
 If your RaspberryPI golang installed by default from repository is outdated, you may consider
 to install actual golang mannualy from official Golang [site](https://golang.org/dl/). Download
 tar.gz file containing armv6l in the name. Follow installation instructions.
-Finally you should have device like /dev/i2c-1 present in the system.
 
 - How to enable I2C bus on RPi device:
 If you employ RaspberryPI, use raspi-config utility to activate i2c-bus on the OS level.
-Go to "Interfaceing Options" menu, to active I2C bus. Restart will require.
+Go to "Interfaceing Options" menu, to active I2C bus.
+Probably you will need to reboot to load i2c kernel module.
+Finally you should have device like /dev/i2c-1 present in the system.
 
 - How to find I2C bus allocation and device address:
 Use i2cdetect utility in format "i2cdetect -y X", where X may vary from 0 to 5 or more,
