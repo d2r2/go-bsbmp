@@ -19,7 +19,7 @@ func main() {
 		lg.Fatal(err)
 	}
 	defer i2c.Close()
-	// Uncomment next line to supress verbose output
+	// Uncomment next line to suppress verbose output
 	// logger.ChangePackageLogLevel("i2c", logger.InfoLevel)
 
 	// sensor, err := bsbmp.NewBMP(bsbmp.BMP180_TYPE, i2c)
@@ -27,7 +27,7 @@ func main() {
 	if err != nil {
 		lg.Fatal(err)
 	}
-	// Uncomment next line to supress verbose output
+	// Uncomment next line to suppress verbose output
 	// logger.ChangePackageLogLevel("bsbmp", logger.InfoLevel)
 
 	err = sensor.IsValidCoefficients()
