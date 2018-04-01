@@ -168,7 +168,7 @@ func (v *BMP180) readUncompPressure(i2c *i2c.I2C, accuracy AccuracyMode) (int32,
 	return up, nil
 }
 
-// ReadTemperatureMult100C reads and calculates temprature in C (celsius) multipled by 100.
+// ReadTemperatureMult100C reads and calculates temprature in C (celsius) multiplied by 100.
 // Multiplication approach allow to keep result as integer amount.
 func (v *BMP180) ReadTemperatureMult100C(i2c *i2c.I2C, mode AccuracyMode) (int32, error) {
 	ut, err := v.readUncompTemp(i2c)
