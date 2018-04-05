@@ -4,6 +4,29 @@ import (
 	i2c "github.com/d2r2/go-i2c"
 )
 
+// BMP180 sensors memory map
+const (
+	// BMP180 general registers
+	BMP180_CNTR_MEAS_REG = 0xF4
+	BMP180_RESET         = 0xE0
+	// BMP180 specific compensation 2-byte registers
+	BMP180_COEF_AC1_MSB_LSB = 0xAA
+	BMP180_COEF_AC2_MSB_LSB = 0xAC
+	BMP180_COEF_AC3_MSB_LSB = 0xAE
+	BMP180_COEF_AC4_MSB_LSB = 0xB0
+	BMP180_COEF_AC5_MSB_LSB = 0xB2
+	BMP180_COEF_AC6_MSB_LSB = 0xB4
+	BMP180_COEF_B1_MSB_LSB  = 0xB6
+	BMP180_COEF_B2_MSB_LSB  = 0xB8
+	BMP180_COEF_MB_MSB_LSB  = 0xBA
+	BMP180_COEF_MC_MSB_LSB  = 0xBC
+	BMP180_COEF_MD_MSB_LSB  = 0xBE
+	BMP180_COEF_START       = BMP180_COEF_AC1_MSB_LSB
+	BMP180_COEF_COUNT       = 11
+	// BMP180 specific 3-byte reading out temprature and preassure
+	BMP180_OUT_MSB_LSB_XLSB = 0xF6
+)
+
 // BMP180 specific type
 type BMP180 struct {
 	// Unique calibration coefficients

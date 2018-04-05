@@ -4,6 +4,33 @@ import (
 	i2c "github.com/d2r2/go-i2c"
 )
 
+// BMP280 sensors memory map
+const (
+	// BMP280 general registers
+	BMP280_STATUS_REG    = 0xF3
+	BMP280_CNTR_MEAS_REG = 0xF4
+	BMP280_CONFIG        = 0xF5 // TODO: support IIR filter settings
+	BMP280_RESET         = 0xE0
+	// BMP280 specific compensation 2-byte registers
+	BMP280_COEF_T1_LSB_MSB = 0x88
+	BMP280_COEF_T2_LSB_MSB = 0x8A
+	BMP280_COEF_T3_LSB_MSB = 0x8C
+	BMP280_COEF_P1_LSB_MSB = 0x8E
+	BMP280_COEF_P2_LSB_MSB = 0x90
+	BMP280_COEF_P3_LSB_MSB = 0x92
+	BMP280_COEF_P4_LSB_MSB = 0x94
+	BMP280_COEF_P5_LSB_MSB = 0x96
+	BMP280_COEF_P6_LSB_MSB = 0x98
+	BMP280_COEF_P7_LSB_MSB = 0x9A
+	BMP280_COEF_P8_LSB_MSB = 0x9C
+	BMP280_COEF_P9_LSB_MSB = 0x9E
+	BMP280_COEF_START      = BMP280_COEF_T1_LSB_MSB
+	BMP280_COEF_COUNT      = 12
+	// BMP280 specific 3-byte reading out temprature and preassure
+	BMP280_PRESS_OUT_MSB_LSB_XLSB = 0xF7
+	BMP280_TEMP_OUT_MSB_LSB_XLSB  = 0xFA
+)
+
 // BMP280 specific type
 type BMP280 struct {
 	// Unique calibration coefficients
