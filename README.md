@@ -8,7 +8,7 @@ Bosch Sensortec BMP180, BMP280, BME280 temperature, atmospheric pressure and hum
 
 BMP180 ([pdf reference](https://raw.github.com/d2r2/go-bsbmp/master/docs/BST-BMP180-DS000-09.pdf)), BMP280 ([pdf reference](https://raw.github.com/d2r2/go-bsbmp/master/docs/BST-BMP280-DS001-11.pdf)) and BME280 ([pdf reference](https://raw.github.com/d2r2/go-bsbmp/master/docs/BST-BME280_DS001-12.pdf)) are populare sensors among Arduino and Raspberry PI developers.
 Sensors are compact and quite accurately measuring, working via i2c bus interface:
-![image](https://raw.github.com/d2r2/go-bsbmp/master/docs/bmp180_bmp280_1.jpg)
+![image](https://raw.github.com/d2r2/go-bsbmp/master/docs/bmp180_bmp280_bme280_1.jpg)
 
 Here is a library written in [Go programming language](https://golang.org/) for Raspberry PI and counterparts, which gives you in the output temperature and atmospheric pressure values (making all necessary i2c-bus interracting and values computing).
 
