@@ -15,7 +15,7 @@ func main() {
 	defer logger.FinalizeLogger()
 	// Create new connection to i2c-bus on 1 line with address 0x76.
 	// Use i2cdetect utility to find device address over the i2c-bus
-	i2c, err := i2c.NewI2C(0x77, 0)
+	i2c, err := i2c.NewI2C(0x76, 0)
 	if err != nil {
 		lg.Fatal(err)
 	}
@@ -29,9 +29,9 @@ func main() {
 	logger.ChangePackageLogLevel("i2c", logger.InfoLevel)
 	logger.ChangePackageLogLevel("bsbmp", logger.InfoLevel)
 
-	// sensor, err := bsbmp.NewBMP(bsbmp.BMP180_TYPE, i2c)
-	// sensor, err := bsbmp.NewBMP(bsbmp.BMP280_TYPE, i2c)
-	sensor, err := bsbmp.NewBMP(bsbmp.BME280, i2c)
+	// sensor, err := bsbmp.NewBMP(bsbmp.BMP180, i2c)
+	sensor, err := bsbmp.NewBMP(bsbmp.BMP280, i2c)
+	// sensor, err := bsbmp.NewBMP(bsbmp.BME280, i2c)
 	if err != nil {
 		lg.Fatal(err)
 	}
