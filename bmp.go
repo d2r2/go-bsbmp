@@ -1,7 +1,6 @@
 package bsbmp
 
 import (
-	"fmt"
 	"math"
 
 	"github.com/d2r2/go-i2c"
@@ -14,10 +13,12 @@ type SensorType int
 
 // Implement Stringer interface.
 func (v SensorType) String() string {
-	if v == BMP180_TYPE {
+	if v == BMP180 {
 		return "BMP180"
-	} else if v == BMP280_TYPE {
+	} else if v == BMP280 {
 		return "BMP280"
+	} else if v == BME280 {
+		return "BME280"
 	} else {
 		return "!!! unknown !!!"
 	}
@@ -25,9 +26,11 @@ func (v SensorType) String() string {
 
 const (
 	// Bosch Sensortec pressure and temperature sensor model BMP180.
-	BMP180_TYPE SensorType = iota
+	BMP180 SensorType = iota
 	// Bosch Sensortec pressure and temperature sensor model BMP280.
-	BMP280_TYPE
+	BMP280
+	// Bosch Sensortec pressure and temperature sensor model BME280.
+	BME280
 )
 
 // Accuracy mode for calculation of atmospheric pressure and temprature.
@@ -45,18 +48,27 @@ const (
 // BMPx sensors memory map
 const (
 	// General registers
-	ID_REG = 0xD0
+	BMP_ID_REG = 0xD0
 )
 
 // Abstract BMPx sensor interface
 // to control and gather data.
 type SensorInterface interface {
+	// ReadCoefficients read coefficient's block unique for each sensor.
 	ReadCoefficients(i2c *i2c.I2C) error
+	// IsValidCoefficients verify that coefficient values are not empty.
 	IsValidCoefficients() error
-	GetSensorSignature() uint8
+	// Verify, that specific sensor can own signature identifier and
+	// return text description of this specific id.
+	RecognizeSignature(signature uint8) (string, error)
+	// IsBusy check via status register that sensor ready for data exchange.
 	IsBusy(i2c *i2c.I2C) (bool, error)
-	ReadTemperatureMult100C(i2c *i2c.I2C, mode AccuracyMode) (int32, error)
-	ReadPressureMult10Pa(i2c *i2c.I2C, mode AccuracyMode) (int32, error)
+	// Divide by 10 to get float temperature value in celsius.
+	ReadTemperatureMult100C(i2c *i2c.I2C, mode AccuracyMode) (temperature int32, erro error)
+	// Divide by 10 to get float preasure value in pascal.
+	ReadPressureMult10Pa(i2c *i2c.I2C, mode AccuracyMode) (pressure uint32, erro error)
+	// Divide by 1024 to get float humidity value in range [0..100]%.
+	ReadHumidityMultQ2210(i2c *i2c.I2C, mode AccuracyMode) (supported bool, humidity uint32, erro error)
 }
 
 // BMP represent both sensors BMP180 and BMP280
@@ -65,28 +77,27 @@ type BMP struct {
 	sensorType SensorType
 	i2c        *i2c.I2C
 	bmp        SensorInterface
-	// Sensor id
-	id uint8
 }
 
 // NewBMP creates new sensor object.
 func NewBMP(sensorType SensorType, i2c *i2c.I2C) (*BMP, error) {
 	v := &BMP{sensorType: sensorType, i2c: i2c}
 	switch sensorType {
-	case BMP180_TYPE:
-		v.bmp = &BMP180{}
-	case BMP280_TYPE:
-		v.bmp = &BMP280{}
+	case BMP180:
+		v.bmp = &SensorBMP180{}
+	case BMP280:
+		v.bmp = &SensorBMP280{}
+	case BME280:
+		v.bmp = &SensorBME280{}
 	}
 
-	err := v.ReadSensorID()
+	id, err := v.ReadSensorID()
 	if err != nil {
 		return nil, err
 	}
-	signature := v.bmp.GetSensorSignature()
-	if v.id != signature {
-		return nil, fmt.Errorf("Sensor id should be 0x%X, but 0x%X received",
-			signature, v.id)
+	_, err = v.bmp.RecognizeSignature(id)
+	if err != nil {
+		return nil, err
 	}
 	err = v.bmp.ReadCoefficients(i2c)
 	if err != nil {
@@ -97,13 +108,12 @@ func NewBMP(sensorType SensorType, i2c *i2c.I2C) (*BMP, error) {
 
 // ReadSensorID reads sensor signature. It may be used for validation,
 // that proper code settings used for sensor data decoding.
-func (v *BMP) ReadSensorID() error {
-	var err error
-	v.id, err = v.i2c.ReadRegU8(ID_REG)
+func (v *BMP) ReadSensorID() (uint8, error) {
+	id, err := v.i2c.ReadRegU8(BMP_ID_REG)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	return nil
+	return id, nil
 }
 
 func (v *BMP) IsValidCoefficients() error {
@@ -128,7 +138,7 @@ func (v *BMP) ReadTemperatureC(accuracy AccuracyMode) (float32, error) {
 
 // ReadPressureMult10Pa reads and calculates atmospheric pressure in Pa (Pascal) multiplied by 10.
 // Multiplication approach allow to keep result as integer amount.
-func (v *BMP) ReadPressureMult10Pa(accuracy AccuracyMode) (int32, error) {
+func (v *BMP) ReadPressureMult10Pa(accuracy AccuracyMode) (uint32, error) {
 	p, err := v.bmp.ReadPressureMult10Pa(v.i2c, accuracy)
 	return p, err
 }
@@ -153,6 +163,19 @@ func (v *BMP) ReadPressureMmHg(accuracy AccuracyMode) (float32, error) {
 	// Round up to 2 decimals after point
 	p2 := float32(int(float32(p)/mmHg*10)) / 100
 	return p2, nil
+}
+
+// ReadHumidityRH reads and calculate humidity %RH.
+func (v *BMP) ReadHumidityRH(accuracy AccuracyMode) (bool, float32, error) {
+	supported, h, err := v.bmp.ReadHumidityMultQ2210(v.i2c, accuracy)
+	if !supported {
+		return supported, 0, nil
+	}
+	if err != nil {
+		return supported, 0, err
+	}
+	h2 := float32(h) / 1024
+	return supported, h2, nil
 }
 
 // ReadAltitude reads and calculates altitude above sea level, if we assume

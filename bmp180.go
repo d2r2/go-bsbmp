@@ -1,6 +1,11 @@
 package bsbmp
 
 import (
+	"bytes"
+	"encoding/binary"
+	"errors"
+	"fmt"
+
 	i2c "github.com/d2r2/go-i2c"
 )
 
@@ -9,125 +14,184 @@ const (
 	// BMP180 general registers
 	BMP180_CNTR_MEAS_REG = 0xF4
 	BMP180_RESET         = 0xE0
-	// BMP180 specific compensation 2-byte registers
-	BMP180_COEF_AC1_MSB_LSB = 0xAA
-	BMP180_COEF_AC2_MSB_LSB = 0xAC
-	BMP180_COEF_AC3_MSB_LSB = 0xAE
-	BMP180_COEF_AC4_MSB_LSB = 0xB0
-	BMP180_COEF_AC5_MSB_LSB = 0xB2
-	BMP180_COEF_AC6_MSB_LSB = 0xB4
-	BMP180_COEF_B1_MSB_LSB  = 0xB6
-	BMP180_COEF_B2_MSB_LSB  = 0xB8
-	BMP180_COEF_MB_MSB_LSB  = 0xBA
-	BMP180_COEF_MC_MSB_LSB  = 0xBC
-	BMP180_COEF_MD_MSB_LSB  = 0xBE
-	BMP180_COEF_START       = BMP180_COEF_AC1_MSB_LSB
-	BMP180_COEF_COUNT       = 11
+	// BMP180 specific compensation register's block
+	BMP180_COEF_START = 0xAA
+	BMP180_COEF_BYTES = 22
 	// BMP180 specific 3-byte reading out temprature and preassure
 	BMP180_OUT_MSB_LSB_XLSB = 0xF6
 )
 
-// BMP180 specific type
-type BMP180 struct {
-	// Unique calibration coefficients
-	ac1 int16
-	ac2 int16
-	ac3 int16
-	ac4 uint16
-	ac5 uint16
-	ac6 uint16
-	b1  int16
-	b2  int16
-	mb  int16
-	mc  int16
-	md  int16
+// Unique BMP180 calibration coefficients
+type CoeffBMP180 struct {
+	// Registers storing unique calibration coefficients
+	COEF_AA uint8
+	COEF_AB uint8
+	COEF_AC uint8
+	COEF_AD uint8
+	COEF_AE uint8
+	COEF_AF uint8
+	COEF_B0 uint8
+	COEF_B1 uint8
+	COEF_B2 uint8
+	COEF_B3 uint8
+	COEF_B4 uint8
+	COEF_B5 uint8
+	COEF_B6 uint8
+	COEF_B7 uint8
+	COEF_B8 uint8
+	COEF_B9 uint8
+	COEF_BA uint8
+	COEF_BB uint8
+	COEF_BC uint8
+	COEF_BD uint8
+	COEF_BE uint8
+	COEF_BF uint8
+}
+
+func (v *CoeffBMP180) dig_AC1() int16 {
+	return int16(uint16(v.COEF_AA)<<8 | uint16(v.COEF_AB))
+}
+
+func (v *CoeffBMP180) dig_AC2() int16 {
+	return int16(uint16(v.COEF_AC)<<8 | uint16(v.COEF_AD))
+}
+
+func (v *CoeffBMP180) dig_AC3() int16 {
+	return int16(uint16(v.COEF_AE)<<8 | uint16(v.COEF_AF))
+}
+
+func (v *CoeffBMP180) dig_AC4() uint16 {
+	return uint16(v.COEF_B0)<<8 | uint16(v.COEF_B1)
+}
+
+func (v *CoeffBMP180) dig_AC5() uint16 {
+	return uint16(v.COEF_B2)<<8 | uint16(v.COEF_B3)
+}
+
+func (v *CoeffBMP180) dig_AC6() uint16 {
+	return uint16(v.COEF_B4)<<8 | uint16(v.COEF_B5)
+}
+
+func (v *CoeffBMP180) dig_B1() int16 {
+	return int16(uint16(v.COEF_B6)<<8 | uint16(v.COEF_B7))
+}
+
+func (v *CoeffBMP180) dig_B2() int16 {
+	return int16(uint16(v.COEF_B8)<<8 | uint16(v.COEF_B9))
+}
+
+func (v *CoeffBMP180) dig_MB() int16 {
+	return int16(uint16(v.COEF_BA)<<8 | uint16(v.COEF_BB))
+}
+
+func (v *CoeffBMP180) dig_MC() int16 {
+	return int16(uint16(v.COEF_BC)<<8 | uint16(v.COEF_BD))
+}
+
+func (v *CoeffBMP180) dig_MD() int16 {
+	return int16(uint16(v.COEF_BE)<<8 | uint16(v.COEF_BF))
+}
+
+// SensorBMP180 specific type
+type SensorBMP180 struct {
+	Coeff *CoeffBMP180
 }
 
 // Static cast to verify at compile time
 // that type implement interface.
-var _ SensorInterface = &BMP180{}
+var _ SensorInterface = &SensorBMP180{}
 
 // ReadCoefficients reads compensation coefficients, unique for each sensor.
-func (v *BMP180) ReadCoefficients(i2c *i2c.I2C) error {
-	var err error
-	buf, _, err := i2c.ReadRegBytes(BMP180_COEF_START, BMP180_COEF_COUNT*2)
+func (v *SensorBMP180) ReadCoefficients(i2c *i2c.I2C) error {
+	_, err := i2c.WriteBytes([]byte{BMP180_COEF_START})
 	if err != nil {
 		return err
 	}
-	v.ac1 = getS16BE(buf[BMP180_COEF_AC1_MSB_LSB-BMP180_COEF_START : BMP180_COEF_AC1_MSB_LSB-BMP180_COEF_START+2])
-	v.ac2 = getS16BE(buf[BMP180_COEF_AC2_MSB_LSB-BMP180_COEF_START : BMP180_COEF_AC2_MSB_LSB-BMP180_COEF_START+2])
-	v.ac3 = getS16BE(buf[BMP180_COEF_AC3_MSB_LSB-BMP180_COEF_START : BMP180_COEF_AC3_MSB_LSB-BMP180_COEF_START+2])
-	v.ac4 = getU16BE(buf[BMP180_COEF_AC4_MSB_LSB-BMP180_COEF_START : BMP180_COEF_AC4_MSB_LSB-BMP180_COEF_START+2])
-	v.ac5 = getU16BE(buf[BMP180_COEF_AC5_MSB_LSB-BMP180_COEF_START : BMP180_COEF_AC5_MSB_LSB-BMP180_COEF_START+2])
-	v.ac6 = getU16BE(buf[BMP180_COEF_AC6_MSB_LSB-BMP180_COEF_START : BMP180_COEF_AC6_MSB_LSB-BMP180_COEF_START+2])
-	v.b1 = getS16BE(buf[BMP180_COEF_B1_MSB_LSB-BMP180_COEF_START : BMP180_COEF_B1_MSB_LSB-BMP180_COEF_START+2])
-	v.b2 = getS16BE(buf[BMP180_COEF_B2_MSB_LSB-BMP180_COEF_START : BMP180_COEF_B2_MSB_LSB-BMP180_COEF_START+2])
-	v.mb = getS16BE(buf[BMP180_COEF_MB_MSB_LSB-BMP180_COEF_START : BMP180_COEF_MB_MSB_LSB-BMP180_COEF_START+2])
-	v.mc = getS16BE(buf[BMP180_COEF_MC_MSB_LSB-BMP180_COEF_START : BMP180_COEF_MC_MSB_LSB-BMP180_COEF_START+2])
-	v.md = getS16BE(buf[BMP180_COEF_MD_MSB_LSB-BMP180_COEF_START : BMP180_COEF_MD_MSB_LSB-BMP180_COEF_START+2])
+	var coef1 [BMP180_COEF_BYTES]byte
+	err = readDataToStruct(i2c, BMP180_COEF_BYTES,
+		binary.LittleEndian, &coef1)
+	if err != nil {
+		return err
+	}
+	buf := bytes.NewBuffer(coef1[:])
+	coeff := &CoeffBMP180{}
+	err = binary.Read(buf, binary.LittleEndian, coeff)
+	if err != nil {
+		return err
+	}
+	v.Coeff = coeff
 	return nil
 }
 
 // IsValidCoefficients verify that compensate registers
 // are not empty, and thus are valid.
-func (v *BMP180) IsValidCoefficients() error {
-	err := checkCoefficient(uint16(v.ac1), "AC1")
-	if err != nil {
-		return err
-	}
-	err = checkCoefficient(uint16(v.ac2), "AC2")
-	if err != nil {
-		return err
-	}
-	err = checkCoefficient(uint16(v.ac3), "AC3")
-	if err != nil {
-		return err
-	}
-	err = checkCoefficient(v.ac4, "AC4")
-	if err != nil {
-		return err
-	}
-	err = checkCoefficient(v.ac5, "AC5")
-	if err != nil {
-		return err
-	}
-	err = checkCoefficient(v.ac6, "AC6")
-	if err != nil {
-		return err
-	}
-	err = checkCoefficient(uint16(v.b1), "B1")
-	if err != nil {
-		return err
-	}
-	err = checkCoefficient(uint16(v.b2), "B2")
-	if err != nil {
-		return err
-	}
-	err = checkCoefficient(uint16(v.mb), "MB")
-	if err != nil {
-		return err
-	}
-	err = checkCoefficient(uint16(v.mc), "MC")
-	if err != nil {
-		return err
-	}
-	err = checkCoefficient(uint16(v.md), "MD")
-	if err != nil {
+func (v *SensorBMP180) IsValidCoefficients() error {
+	if v.Coeff != nil {
+		err := checkCoefficient(uint16(v.Coeff.dig_AC1()), "AC1")
+		if err != nil {
+			return err
+		}
+		err = checkCoefficient(uint16(v.Coeff.dig_AC2()), "AC2")
+		if err != nil {
+			return err
+		}
+		err = checkCoefficient(uint16(v.Coeff.dig_AC3()), "AC3")
+		if err != nil {
+			return err
+		}
+		err = checkCoefficient(v.Coeff.dig_AC4(), "AC4")
+		if err != nil {
+			return err
+		}
+		err = checkCoefficient(v.Coeff.dig_AC5(), "AC5")
+		if err != nil {
+			return err
+		}
+		err = checkCoefficient(v.Coeff.dig_AC6(), "AC6")
+		if err != nil {
+			return err
+		}
+		err = checkCoefficient(uint16(v.Coeff.dig_B1()), "B1")
+		if err != nil {
+			return err
+		}
+		err = checkCoefficient(uint16(v.Coeff.dig_B2()), "B2")
+		if err != nil {
+			return err
+		}
+		err = checkCoefficient(uint16(v.Coeff.dig_MB()), "MB")
+		if err != nil {
+			return err
+		}
+		err = checkCoefficient(uint16(v.Coeff.dig_MC()), "MC")
+		if err != nil {
+			return err
+		}
+		err = checkCoefficient(uint16(v.Coeff.dig_MD()), "MD")
+		if err != nil {
+			return err
+		}
+	} else {
+		err := errors.New("CoeffBMP180 struct does not built")
 		return err
 	}
 	return nil
 }
 
-// GetSensorSignature returns constant signature
-// correspond to v type of sensors.
-func (v *BMP180) GetSensorSignature() uint8 {
-	var signature byte = 0x55
-	return signature
+// RecognizeSignature returns description of signature if it valid,
+// otherwise - error.
+func (v *SensorBMP180) RecognizeSignature(signature uint8) (string, error) {
+	switch signature {
+	case 0x55:
+		return "BMP180", nil
+	default:
+		return "", errors.New(fmt.Sprintf("signature 0x%x doesn't belong to BMP180 series", signature))
+	}
 }
 
 // IsBusy reads register 0xF4 for "busy" flag,
 // according to sensor specification.
-func (v *BMP180) IsBusy(i2c *i2c.I2C) (busy bool, err error) {
+func (v *SensorBMP180) IsBusy(i2c *i2c.I2C) (busy bool, err error) {
 	// Check flag to know status of calculation, according
 	// to specification about SCO (Start of conversion) flag
 	b, err := i2c.ReadRegU8(BMP180_CNTR_MEAS_REG)
@@ -140,7 +204,7 @@ func (v *BMP180) IsBusy(i2c *i2c.I2C) (busy bool, err error) {
 }
 
 // readUncompTemp reads uncompensated temprature from sensor.
-func (v *BMP180) readUncompTemp(i2c *i2c.I2C) (int32, error) {
+func (v *SensorBMP180) readUncompTemp(i2c *i2c.I2C) (int32, error) {
 	err := i2c.WriteRegU8(BMP180_CNTR_MEAS_REG, 0x2F)
 	if err != nil {
 		return 0, err
@@ -156,7 +220,7 @@ func (v *BMP180) readUncompTemp(i2c *i2c.I2C) (int32, error) {
 	return int32(w), nil
 }
 
-func (v *BMP180) getOversamplingRation(accuracy AccuracyMode) byte {
+func (v *SensorBMP180) getOversamplingRation(accuracy AccuracyMode) byte {
 	var b byte
 	switch accuracy {
 	case ACCURACY_LOW, ACCURACY_ULTRA_LOW:
@@ -172,7 +236,7 @@ func (v *BMP180) getOversamplingRation(accuracy AccuracyMode) byte {
 }
 
 // readUncompPressure reads atmospheric uncompensated pressure from sensor.
-func (v *BMP180) readUncompPressure(i2c *i2c.I2C, accuracy AccuracyMode) (int32, error) {
+func (v *SensorBMP180) readUncompPressure(i2c *i2c.I2C, accuracy AccuracyMode) (int32, error) {
 	oss := v.getOversamplingRation(accuracy)
 	lg.Debugf("oss=%v", oss)
 	err := i2c.WriteRegU8(BMP180_CNTR_MEAS_REG, 0x34+(oss<<6))
@@ -192,8 +256,8 @@ func (v *BMP180) readUncompPressure(i2c *i2c.I2C, accuracy AccuracyMode) (int32,
 }
 
 // ReadTemperatureMult100C reads and calculates temprature in C (celsius) multiplied by 100.
-// Multiplication approach allow to keep result as integer amount.
-func (v *BMP180) ReadTemperatureMult100C(i2c *i2c.I2C, mode AccuracyMode) (int32, error) {
+// Multiplication approach allow to keep result as integer number.
+func (v *SensorBMP180) ReadTemperatureMult100C(i2c *i2c.I2C, mode AccuracyMode) (int32, error) {
 	ut, err := v.readUncompTemp(i2c)
 	if err != nil {
 		return 0, err
@@ -203,9 +267,9 @@ func (v *BMP180) ReadTemperatureMult100C(i2c *i2c.I2C, mode AccuracyMode) (int32
 		return 0, err
 	}
 	// Calculate temperature according to sensor specification
-	x1 := ((ut - int32(v.ac6)) * int32(v.ac5)) >> 15
+	x1 := ((ut - int32(v.Coeff.dig_AC6())) * int32(v.Coeff.dig_AC5())) >> 15
 	lg.Debugf("x1=%v", x1)
-	x2 := (int32(v.mc) << 11) / (x1 + int32(v.md))
+	x2 := (int32(v.Coeff.dig_MC()) << 11) / (x1 + int32(v.Coeff.dig_MD()))
 	lg.Debugf("x2=%v", x2)
 	b5 := x1 + x2
 	lg.Debugf("b5=%v", b5)
@@ -215,8 +279,8 @@ func (v *BMP180) ReadTemperatureMult100C(i2c *i2c.I2C, mode AccuracyMode) (int32
 }
 
 // ReadPressureMult10Pa reads and calculates atmospheric pressure in Pa (Pascal) multiplied by 10.
-// Multiplication approach allow to keep result as integer amount.
-func (v *BMP180) ReadPressureMult10Pa(i2c *i2c.I2C, accuracy AccuracyMode) (int32, error) {
+// Multiplication approach allow to keep result as integer number.
+func (v *SensorBMP180) ReadPressureMult10Pa(i2c *i2c.I2C, accuracy AccuracyMode) (uint32, error) {
 	oss := v.getOversamplingRation(accuracy)
 	ut, err := v.readUncompTemp(i2c)
 	if err != nil {
@@ -236,29 +300,29 @@ func (v *BMP180) ReadPressureMult10Pa(i2c *i2c.I2C, accuracy AccuracyMode) (int3
 	}
 
 	// Calculate pressure according to sensor specification
-	x1 := ((ut - int32(v.ac6)) * int32(v.ac5)) >> 15
+	x1 := ((ut - int32(v.Coeff.dig_AC6())) * int32(v.Coeff.dig_AC5())) >> 15
 	lg.Debugf("x1=%v", x1)
-	x2 := (int32(v.mc) << 11) / (x1 + int32(v.md))
+	x2 := (int32(v.Coeff.dig_MC()) << 11) / (x1 + int32(v.Coeff.dig_MD()))
 	lg.Debugf("x2=%v", x2)
 	b5 := x1 + x2
 	lg.Debugf("b5=%v", b5)
 	b6 := b5 - 4000
 	lg.Debugf("b6=%v", b6)
-	x1 = (int32(v.b2) * ((b6 * b6) >> 12)) >> 11
+	x1 = (int32(v.Coeff.dig_B2()) * ((b6 * b6) >> 12)) >> 11
 	lg.Debugf("x1=%v", x1)
-	x2 = (int32(v.ac2) * b6) >> 11
+	x2 = (int32(v.Coeff.dig_AC2()) * b6) >> 11
 	lg.Debugf("x2=%v", x2)
 	x3 := x1 + x2
 	lg.Debugf("x3=%v", x3)
-	b3 := (((int32(v.ac1)*4 + x3) << uint32(oss)) + 2) / 4
+	b3 := (((int32(v.Coeff.dig_AC1())*4 + x3) << uint32(oss)) + 2) / 4
 	lg.Debugf("b3=%v", b3)
-	x1 = (int32(v.ac3) * b6) >> 13
+	x1 = (int32(v.Coeff.dig_AC3()) * b6) >> 13
 	lg.Debugf("x1=%v", x1)
-	x2 = ((int32(v.b1) * (b6 * b6)) >> 12) >> 16
+	x2 = ((int32(v.Coeff.dig_B1()) * (b6 * b6)) >> 12) >> 16
 	lg.Debugf("x2=%v", x2)
 	x3 = ((x1 + x2) + 2) >> 2
 	lg.Debugf("x3=%v", x3)
-	b4 := (uint32(v.ac4) * uint32(x3+32768)) >> 15
+	b4 := (uint32(v.Coeff.dig_AC4()) * uint32(x3+32768)) >> 15
 	lg.Debugf("b4=%v", b4)
 	b7 := (uint32(up) - uint32(b3)) * (50000 >> uint32(oss))
 	lg.Debugf("b7=%v", b7)
@@ -277,6 +341,12 @@ func (v *BMP180) ReadPressureMult10Pa(i2c *i2c.I2C, accuracy AccuracyMode) (int3
 	lg.Debugf("x2=%v", x2)
 	p1 += (x1 + x2 + 3791) >> 4
 	lg.Debugf("p=%v", p1)
-	p := p1 * 10
+	p := uint32(p1) * 10
 	return p, nil
+}
+
+// ReadHumidityMultQ2210 does nothing. Humidity function is not applicable for BMP180.
+func (v *SensorBMP180) ReadHumidityMultQ2210(i2c *i2c.I2C, accuracy AccuracyMode) (bool, uint32, error) {
+	// Not supported
+	return false, 0, nil
 }

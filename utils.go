@@ -1,6 +1,8 @@
 package bsbmp
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"time"
 
@@ -59,4 +61,20 @@ func waitForCompletion(sensor SensorInterface, i2c *i2c.I2C) (timeout bool, err 
 		time.Sleep(5 * time.Millisecond)
 	}
 	return true, nil
+}
+
+// Read byte block from i2c device to struct object.
+func readDataToStruct(i2c *i2c.I2C, byteCount int,
+	byteOrder binary.ByteOrder, obj interface{}) error {
+	buf1 := make([]byte, byteCount)
+	_, err := i2c.ReadBytes(buf1)
+	if err != nil {
+		return err
+	}
+	buf := bytes.NewBuffer(buf1)
+	err = binary.Read(buf, byteOrder, obj)
+	if err != nil {
+		return err
+	}
+	return nil
 }
