@@ -1,14 +1,14 @@
-Bosch Sensortec BMP180, BMP280 temperature and atmospheric pressure sensors
-===========================================================================
+Bosch Sensortec BMP180, BMP280, BME280 temperature, atmospheric pressure and humidity sensors
+=============================================================================================
 
 [![Build Status](https://travis-ci.org/d2r2/go-bsbmp.svg?branch=master)](https://travis-ci.org/d2r2/go-bsbmp)
 [![Go Report Card](https://goreportcard.com/badge/github.com/d2r2/go-bsbmp)](https://goreportcard.com/report/github.com/d2r2/go-bsbmp)
 [![GoDoc](https://godoc.org/github.com/d2r2/go-bsbmp?status.svg)](https://godoc.org/github.com/d2r2/go-bsbmp)
 [![MIT License](http://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-BMP180 ([pdf reference](https://raw.github.com/d2r2/go-bsbmp/master/docs/BST-BMP180-DS000-09.pdf)) and BMP280 ([pdf reference](https://raw.github.com/d2r2/go-bsbmp/master/docs/BST-BMP280-DS001-11.pdf)) are populare sensors among Arduino and Raspberry PI developers.
-Both sensors are small and quite accurately measuring, working via i2c bus interface:
-![image](https://raw.github.com/d2r2/go-bsbmp/master/docs/bmp180_bmp280_1.jpg)
+BMP180 ([pdf reference](https://raw.github.com/d2r2/go-bsbmp/master/docs/BST-BMP180-DS000-09.pdf)), BMP280 ([pdf reference](https://raw.github.com/d2r2/go-bsbmp/master/docs/BST-BMP280-DS001-11.pdf)) and BME280 ([pdf reference](https://raw.github.com/d2r2/go-bsbmp/master/docs/BST-BME280_DS001-12.pdf)) are populare sensors among Arduino and Raspberry PI developers.
+Sensors are compact and quite accurately measuring, working via i2c bus interface:
+![image](https://raw.github.com/d2r2/go-bsbmp/master/docs/bmp180_bmp280_bme280_1.jpg)
 
 Here is a library written in [Go programming language](https://golang.org/) for Raspberry PI and counterparts, which gives you in the output temperature and atmospheric pressure values (making all necessary i2c-bus interracting and values computing).
 
@@ -28,7 +28,7 @@ func main() {
 	// Uncomment next line to supress verbose output
 	//logger.ChangePackageLogLevel("i2c", logger.InfoLevel)
 
-	sensor, err := bsbmp.NewBMP(bsbmp.BMP280_TYPE, i2c)
+	sensor, err := bsbmp.NewBMP(bsbmp.BMP280, i2c)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -93,7 +93,7 @@ Finally you should have device like /dev/i2c-1 present in the system.
 - *How to find I2C bus allocation and device address:*
 Use i2cdetect utility in format "i2cdetect -y X", where X may vary from 0 to 5 or more,
 to discover address occupied by peripheral device. To install utility you should run
-`apt install i2c-tools` on debian-kind system. `i2detect -y 1` sample output:
+`apt install i2c-tools` on debian-kind system. `i2cdetect -y 1` sample output:
 	```
 	     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
 	00:          -- -- -- -- -- -- -- -- -- -- -- -- --
