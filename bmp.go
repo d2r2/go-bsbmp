@@ -40,6 +40,8 @@ func (v SensorType) String() string {
 		return "BMP280"
 	} else if v == BME280 {
 		return "BME280"
+	} else if v == BMP388 {
+		return "BMP388"
 	} else {
 		return "!!! unknown !!!"
 	}
@@ -52,6 +54,8 @@ const (
 	BMP280
 	// Bosch Sensortec pressure and temperature sensor model BME280.
 	BME280
+	// Bosch Sensortec pressure and temperature sensor model BMP388.
+	BMP388
 )
 
 // Accuracy mode for calculation of atmospheric pressure and temprature.
@@ -67,9 +71,9 @@ const (
 )
 
 // BMPx sensors memory map
-const (
+var (
 	// General registers
-	BMP_ID_REG = 0xD0
+	BMP_ID_REG byte = 0xD0
 )
 
 // Abstract BMPx sensor interface
@@ -110,6 +114,9 @@ func NewBMP(sensorType SensorType, i2c *i2c.I2C) (*BMP, error) {
 		v.bmp = &SensorBMP280{}
 	case BME280:
 		v.bmp = &SensorBME280{}
+	case BMP388:
+		v.bmp = &SensorBMP388{}
+		BMP_ID_REG = 0x00
 	}
 
 	id, err := v.ReadSensorID()
