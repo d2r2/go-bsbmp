@@ -68,6 +68,7 @@ const (
 	ACCURACY_STANDARD                       // x4 samples
 	ACCURACY_HIGH                           // x8 samples
 	ACCURACY_ULTRA_HIGH                     // x16 samples
+	ACCURACY_HIGHEST						// x32 samples - added in BMP388
 )
 
 // BMPx sensors memory map

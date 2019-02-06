@@ -34,15 +34,36 @@ import (
 const (
 	// BMP388 general registers
 	BMP388_STATUS_REG    = 0x03
-	BMP388_CNTR_MEAS_REG = 0xF4
+	BMP388_ERR_REG		 = 0x02
+//	BMP388_CNTR_MEAS_REG = 0xF4  // No such reg in BMP388
+	BMP388_ODR_REG		 = 0x1D  // Data Rate control
+	BMP388_OSR_REG		 = 0x1D	 // Over sample rate control
+	BMP388_PWR_CTRL_REG	 = 0x1B	// enable/disable press or temp, set operating mode
+// CONFIG Register is used to set IIR Filter coefficent
 	BMP388_CONFIG        = 0x1F // TODO: support IIR filter settings
-	BMP388_RESET         = 0xE0 // TODO: '388 doesn't have a reset regsiter
+//	BMP388_RESET         = 0xE0 // TODO: '388 doesn't have a reset register
+	BMP388_CMD_REG		 = 0x7E
+//  cmds - nop, extmode, clear FIFO, softreset
 	// BMP388 specific compensation register's block
 	BMP388_COEF_START = 0x31
 	BMP388_COEF_BYTES = 21
 	// BMP388 specific 3-byte reading out temprature and preassure
-	BMP388_PRESS_OUT_MSB_LSB_XLSB = 0xF7
-	BMP388_TEMP_OUT_MSB_LSB_XLSB  = 0xFA
+	BMP388_PRES_OUT_XLSB_LSB_MSB = 0x04
+	BMP388_TEMP_OUT_XLSB_LSB_MSB  = 0x07
+
+	BMP388_PWR_MODE_SLEEP  = 0
+	BMP388_PWR_MODE_FORCED = 1
+	BMP388_PWR_MODE_NORMAL = 3
+
+// IIR Filter coefficent 
+	BMP388_coef_0		= 0 	// bypass-mode
+	BMP388_coef_1		= 0
+	BMP388_coef_3		= 0
+	BMP388_coef_7		= 0
+	BMP388_coef_15		= 0
+	BMP388_coef_31		= 0
+	BMP388_coef_63		= 0
+	BMP388_coef_127		= 0
 )
 
 // Unique BMP388 calibration coefficients
@@ -80,8 +101,8 @@ func (v *CoeffBMP388) PAR_T2() uint16 {
 	return uint16(uint16(v.COEF_34)<<8 | uint16(v.COEF_33))
 }
 
-func (v *CoeffBMP388) PAR_T3() int16 {
-	return int16(v.COEF_35)
+func (v *CoeffBMP388) PAR_T3() int8 {
+	return int8(v.COEF_35)
 }
 
 func (v *CoeffBMP388) PAR_P1() int16 {
@@ -224,6 +245,9 @@ func (v *SensorBMP388) IsValidCoefficients() error {
 		err := errors.New("CoeffBMP388 struct does not build")
 		return err
 	}
+	lg.Debugf("PAR_T1:%v",v.Coeff.PAR_T1())
+	lg.Debugf("PAR_T2:%v",v.Coeff.PAR_T2())
+	lg.Debugf("PAR_T3:%v",v.Coeff.PAR_T3())
 	return nil
 }
 
@@ -240,6 +264,11 @@ func (v *SensorBMP388) RecognizeSignature(signature uint8) (string, error) {
 
 // IsBusy reads register 0xF3 for "busy" flag,
 // according to sensor specification.
+//  BMP388 has three separate busy/done flags - pres, temp, and cmd
+//  this routine is called by a 'waitFor Completion' shared by the other BMP parts, which all have a combined 
+//    busy/done bit.
+//    for now - we return TRUE when any of hte done bits go true
+//   TODO: break out the busy polling
 func (v *SensorBMP388) IsBusy(i2c *i2c.I2C) (busy bool, err error) {
 	// Check flag to know status of calculation, according
 	// to specification about SCO (Start of conversion) flag
@@ -247,23 +276,25 @@ func (v *SensorBMP388) IsBusy(i2c *i2c.I2C) (busy bool, err error) {
 	if err != nil {
 		return false, err
 	}
-	b = b & 0x8
 	lg.Debugf("Busy flag=0x%0X", b)
-	return b != 0, nil
+	b = b & 0x60   // ignore cmd done
+	return b == 0, nil
 }
 
 func (v *SensorBMP388) getOversamplingRation(accuracy AccuracyMode) byte {
 	var b byte
 	switch accuracy {
 	case ACCURACY_ULTRA_LOW:
-		b = 1
+		b = 0
 	case ACCURACY_LOW:
-		b = 2
+		b = 1
 	case ACCURACY_STANDARD:
-		b = 3
+		b = 2
 	case ACCURACY_HIGH:
-		b = 4
+		b = 3
 	case ACCURACY_ULTRA_HIGH:
+		b = 4
+	case ACCURACY_HIGHEST:
 		b = 5
 	}
 	return b
@@ -271,9 +302,21 @@ func (v *SensorBMP388) getOversamplingRation(accuracy AccuracyMode) byte {
 
 // readUncompTemprature reads uncompensated temprature from sensor.
 func (v *SensorBMP388) readUncompTemprature(i2c *i2c.I2C, accuracy AccuracyMode) (int32, error) {
-	var power byte = 1 // Forced mode
+//  set IIR filter to bypass
+	err := i2c.WriteRegU8(BMP388_CONFIG,BMP388_coef_0<<1)
+	if err != nil {
+		return 0, err
+	}
+//   set over sample rate to 1x
 	osrt := v.getOversamplingRation(accuracy)
-	err := i2c.WriteRegU8(BMP388_CNTR_MEAS_REG, power|(osrt<<5))
+	err = i2c.WriteRegU8(BMP388_OSR_REG,osrt<<3)
+	if err != nil {
+		return 0, err
+	}
+// enable pres and temp measuremeent, start a measurment
+	var power byte = (BMP388_PWR_MODE_FORCED<<4) | 3 // enable pres, temp, FORCED operating mode
+	lg.Debugf("power=0x%0X", power)
+	err = i2c.WriteRegU8(BMP388_PWR_CTRL_REG,power)
 	if err != nil {
 		return 0, err
 	}
@@ -281,19 +324,19 @@ func (v *SensorBMP388) readUncompTemprature(i2c *i2c.I2C, accuracy AccuracyMode)
 	if err != nil {
 		return 0, err
 	}
-	buf, _, err := i2c.ReadRegBytes(BMP388_TEMP_OUT_MSB_LSB_XLSB, 3)
+//	TODO: change label to agree with correct ordering of 8 bit registers
+	buf, _, err := i2c.ReadRegBytes(BMP388_TEMP_OUT_XLSB_LSB_MSB, 3)
 	if err != nil {
 		return 0, err
 	}
-	ut := int32(buf[0])<<12 + int32(buf[1])<<4 + int32(buf[2]&0xF0)>>4
+	ut := int32(uint32(buf[0]) + uint32(buf[1])<<8 + uint32(buf[2])<<16)
 	return ut, nil
 }
 
 // readUncompPressure reads atmospheric uncompensated pressure from sensor.
 func (v *SensorBMP388) readUncompPressure(i2c *i2c.I2C, accuracy AccuracyMode) (int32, error) {
-	var power byte = 1 // Forced mode
-	osrp := v.getOversamplingRation(accuracy)
-	err := i2c.WriteRegU8(BMP388_CNTR_MEAS_REG, power|(osrp<<2))
+	var power byte = (BMP388_PWR_MODE_FORCED<<4) | 3 // enable pres, temp, FORCED operating mode
+	err := i2c.WriteRegU8(BMP388_PWR_CTRL_REG,power)
 	if err != nil {
 		return 0, err
 	}
@@ -301,11 +344,20 @@ func (v *SensorBMP388) readUncompPressure(i2c *i2c.I2C, accuracy AccuracyMode) (
 	if err != nil {
 		return 0, err
 	}
-	buf, _, err := i2c.ReadRegBytes(BMP388_PRESS_OUT_MSB_LSB_XLSB, 3)
+	osrp := v.getOversamplingRation(accuracy)
+	err = i2c.WriteRegU8(BMP388_OSR_REG, osrp)
 	if err != nil {
 		return 0, err
 	}
-	up := int32(buf[0])<<12 + int32(buf[1])<<4 + int32(buf[2]&0xF0)>>4
+	_, err = waitForCompletion(v, i2c)
+	if err != nil {
+		return 0, err
+	}
+	buf, _, err := i2c.ReadRegBytes(BMP388_PRES_OUT_XLSB_LSB_MSB, 3)
+	if err != nil {
+		return 0, err
+	}
+	up := int32(buf[0]) + int32(buf[1])<<8 + int32(buf[2])<<16
 	return up, nil
 }
 
@@ -315,10 +367,8 @@ func (v *SensorBMP388) readUncompPressure(i2c *i2c.I2C, accuracy AccuracyMode) (
 // BMP180 - doesn't.
 func (v *SensorBMP388) readUncompTempratureAndPressure(i2c *i2c.I2C,
 	accuracy AccuracyMode) (temprature int32, pressure int32, err error) {
-	var power byte = 1 // Forced mode
-	osrt := v.getOversamplingRation(ACCURACY_STANDARD)
-	osrp := v.getOversamplingRation(accuracy)
-	err = i2c.WriteRegU8(BMP388_CNTR_MEAS_REG, power|(osrt<<5)|(osrp<<2))
+	var power byte = (BMP388_PWR_MODE_FORCED<<4) | 3 // enable pres, temp, FORCED operating mode
+	err = i2c.WriteRegU8(BMP388_PWR_CTRL_REG,power)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -326,22 +376,33 @@ func (v *SensorBMP388) readUncompTempratureAndPressure(i2c *i2c.I2C,
 	if err != nil {
 		return 0, 0, err
 	}
-	buf, _, err := i2c.ReadRegBytes(BMP388_TEMP_OUT_MSB_LSB_XLSB, 3)
+	osrt := v.getOversamplingRation(ACCURACY_STANDARD)
+	osrp := v.getOversamplingRation(accuracy)
+	err = i2c.WriteRegU8(BMP388_OSR_REG, (osrt<<3)|osrp)
 	if err != nil {
 		return 0, 0, err
 	}
-	ut := int32(buf[0])<<12 + int32(buf[1])<<4 + int32(buf[2]&0xF0)>>4
-	buf, _, err = i2c.ReadRegBytes(BMP388_PRESS_OUT_MSB_LSB_XLSB, 3)
+	_, err = waitForCompletion(v, i2c)
 	if err != nil {
 		return 0, 0, err
 	}
-	up := int32(buf[0])<<12 + int32(buf[1])<<4 + int32(buf[2]&0xF0)>>4
+	buf, _, err := i2c.ReadRegBytes(BMP388_TEMP_OUT_XLSB_LSB_MSB, 3)
+	if err != nil {
+		return 0, 0, err
+	}
+	ut := int32(buf[0]) + int32(buf[1])<<8 + int32(buf[2])<<16
+	buf, _, err = i2c.ReadRegBytes(BMP388_PRES_OUT_XLSB_LSB_MSB, 3)
+	if err != nil {
+		return 0, 0, err
+	}
+	up := int32(buf[0]) + int32(buf[1])<<8 + int32(buf[2])<<16
 	return ut, up, nil
 }
 
 // ReadTemperatureMult100C reads and calculates temrature in C (celsius) multiplied by 100.
 // Multiplication approach allow to keep result as integer number.
 func (v *SensorBMP388) ReadTemperatureMult100C(i2c *i2c.I2C, accuracy AccuracyMode) (int32, error) {
+
 	ut, err := v.readUncompTemprature(i2c, accuracy)
 	if err != nil {
 		return 0, err
@@ -351,6 +412,24 @@ func (v *SensorBMP388) ReadTemperatureMult100C(i2c *i2c.I2C, accuracy AccuracyMo
 		return 0, err
 	}
 
+//  comp formula - taken from BMP3 API on github
+	partial_data1 := uint64(ut - int32(256 * int32(v.Coeff.PAR_T1())))
+	partial_data2 := uint64(v.Coeff.PAR_T2()) * partial_data1
+	partial_data3 := partial_data1 * partial_data1
+	partial_data4 := int64(partial_data3) * int64(v.Coeff.PAR_T3())
+	partial_data5 := (int64(partial_data2 * 262144) + partial_data4)
+	partial_data6 := partial_data5 / 4294967269
+	t := int32(partial_data6* 25 / 16384 )
+	lg.Debugf("ut=%V", ut)
+	lg.Debugf("d1=%V ", partial_data1)
+	lg.Debugf("p_d2=%V ", partial_data2)
+	lg.Debugf("p_d3=%V ", partial_data3)
+	lg.Debugf("p_d4=%V ", partial_data4)
+	lg.Debugf("p_d5=%V ", partial_data5)
+	lg.Debugf("p_d6=%V ", partial_data6)
+	return t, nil
+
+/*
 	var1 := ((ut>>3 - int32(v.Coeff.PAR_T1())<<1) * int32(v.Coeff.PAR_T2())) >> 11
 	lg.Debugf("var1=%v", var1)
 	var2 := (((ut>>4 - int32(v.Coeff.PAR_T1())) * (ut>>4 - int32(v.Coeff.PAR_T1()))) >> 12 *
@@ -360,6 +439,8 @@ func (v *SensorBMP388) ReadTemperatureMult100C(i2c *i2c.I2C, accuracy AccuracyMo
 	lg.Debugf("t_fine=%v", tFine)
 	t := (tFine*5 + 128) >> 8
 	return t, nil
+*/
+
 }
 
 // ReadPressureMult10Pa reads and calculates atmospheric pressure in Pa (Pascal) multiplied by 10.
