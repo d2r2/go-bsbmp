@@ -443,7 +443,6 @@ func (v *SensorBMP388) ReadTemperatureMult100C(i2c *i2c.I2C, accuracy AccuracyMo
 
 }
 
-//  TODO: update for BMP388 formulas
 // ReadPressureMult10Pa reads and calculates atmospheric pressure in Pa (Pascal) multiplied by 10.
 // Multiplication approach allow to keep result as integer number.
 func (v *SensorBMP388) ReadPressureMult10Pa(i2c *i2c.I2C, accuracy AccuracyMode) (uint32, error) {
@@ -451,10 +450,6 @@ func (v *SensorBMP388) ReadPressureMult10Pa(i2c *i2c.I2C, accuracy AccuracyMode)
 	if err != nil {
 		return 0, err
 	}
-/// to make debugging easier, jam in known values for ut and up
-	ut = 8049664
-	up = 7066112
-
 	lg.Debugf("ut=%v, up=%v", ut, up)
 
 	err = v.ReadCoefficients(i2c)
