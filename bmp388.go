@@ -113,12 +113,12 @@ func (v *CoeffBMP388) PAR_P2() int16 {
 	return int16(uint16(v.COEF_39)<<8 | uint16(v.COEF_38))
 }
 
-func (v *CoeffBMP388) PAR_P3() int16 {
-	return int16(uint16(v.COEF_3A))
+func (v *CoeffBMP388) PAR_P3() int8 {
+	return int8(uint16(v.COEF_3A))
 }
 
-func (v *CoeffBMP388) PAR_P4() int16 {
-	return int16(uint16(v.COEF_3B))
+func (v *CoeffBMP388) PAR_P4() int8 {
+	return int8(uint16(v.COEF_3B))
 }
 
 func (v *CoeffBMP388) PAR_P5() uint16 {
@@ -129,24 +129,24 @@ func (v *CoeffBMP388) PAR_P6() uint16 {
 	return uint16(uint16(v.COEF_3F)<<8 | uint16(v.COEF_3E))
 }
 
-func (v *CoeffBMP388) PAR_P7() int16 {
-	return int16(uint16(v.COEF_40))
+func (v *CoeffBMP388) PAR_P7() int8 {
+	return int8(uint16(v.COEF_40))
 }
 
-func (v *CoeffBMP388) PAR_P8() int16 {
-	return int16(uint16(v.COEF_41))
+func (v *CoeffBMP388) PAR_P8() int8 {
+	return int8(uint16(v.COEF_41))
 }
 
 func (v *CoeffBMP388) PAR_P9() int16 {
 	return int16(uint16(v.COEF_43)<<8 | uint16(v.COEF_42))
 }
 
-func (v *CoeffBMP388) PAR_P10() int16 {
-	return int16(uint16(v.COEF_44))
+func (v *CoeffBMP388) PAR_P10() int8 {
+	return int8(uint16(v.COEF_44))
 }
 
-func (v *CoeffBMP388) PAR_P11() int16 {
-	return int16(uint16(v.COEF_45))
+func (v *CoeffBMP388) PAR_P11() int8 {
+	return int8(uint16(v.COEF_45))
 }
 
 // SensorBMP388 specific type
@@ -248,6 +248,17 @@ func (v *SensorBMP388) IsValidCoefficients() error {
 	lg.Debugf("PAR_T1:%v",v.Coeff.PAR_T1())
 	lg.Debugf("PAR_T2:%v",v.Coeff.PAR_T2())
 	lg.Debugf("PAR_T3:%v",v.Coeff.PAR_T3())
+	lg.Debugf("PAR_P1:%V",v.Coeff.PAR_P1())
+	lg.Debugf("PAR_P2:%V",v.Coeff.PAR_P2())
+	lg.Debugf("PAR_P3:%V",v.Coeff.PAR_P3())
+	lg.Debugf("PAR_P4:%V",v.Coeff.PAR_P4())
+	lg.Debugf("PAR_P5:%V",v.Coeff.PAR_P5())
+	lg.Debugf("PAR_P6:%V",v.Coeff.PAR_P6())
+	lg.Debugf("PAR_P7:%V",v.Coeff.PAR_P7())
+	lg.Debugf("PAR_P8:%V",v.Coeff.PAR_P8())
+	lg.Debugf("PAR_P9:%V",v.Coeff.PAR_P9())
+	lg.Debugf("PAR_P10:%V",v.Coeff.PAR_P10())
+	lg.Debugf("PAR_P11:%V",v.Coeff.PAR_P11())
 	return nil
 }
 
@@ -419,30 +430,20 @@ func (v *SensorBMP388) ReadTemperatureMult100C(i2c *i2c.I2C, accuracy AccuracyMo
 	partial_data4 := int64(partial_data3) * int64(v.Coeff.PAR_T3())
 	partial_data5 := (int64(partial_data2 * 262144) + partial_data4)
 	partial_data6 := partial_data5 / 4294967269
+//   TODO: save temp for pressure calc
 	t := int32(partial_data6* 25 / 16384 )
-	lg.Debugf("ut=%V", ut)
-	lg.Debugf("d1=%V ", partial_data1)
-	lg.Debugf("p_d2=%V ", partial_data2)
-	lg.Debugf("p_d3=%V ", partial_data3)
-	lg.Debugf("p_d4=%V ", partial_data4)
-	lg.Debugf("p_d5=%V ", partial_data5)
-	lg.Debugf("p_d6=%V ", partial_data6)
+	lg.Debugf("ut=%v", ut)
+	lg.Debugf("d1=%v ", partial_data1)
+	lg.Debugf("p_d2=%v ", partial_data2)
+	lg.Debugf("p_d3=%v ", partial_data3)
+	lg.Debugf("p_d4=%v ", partial_data4)
+	lg.Debugf("p_d5=%v ", partial_data5)
+	lg.Debugf("p_d6=%v ", partial_data6)
 	return t, nil
-
-/*
-	var1 := ((ut>>3 - int32(v.Coeff.PAR_T1())<<1) * int32(v.Coeff.PAR_T2())) >> 11
-	lg.Debugf("var1=%v", var1)
-	var2 := (((ut>>4 - int32(v.Coeff.PAR_T1())) * (ut>>4 - int32(v.Coeff.PAR_T1()))) >> 12 *
-		int32(v.Coeff.PAR_T3())) >> 14
-	lg.Debugf("var1=%v", var2)
-	tFine := var1 + var2
-	lg.Debugf("t_fine=%v", tFine)
-	t := (tFine*5 + 128) >> 8
-	return t, nil
-*/
 
 }
 
+//  TODO: update for BMP388 formulas
 // ReadPressureMult10Pa reads and calculates atmospheric pressure in Pa (Pascal) multiplied by 10.
 // Multiplication approach allow to keep result as integer number.
 func (v *SensorBMP388) ReadPressureMult10Pa(i2c *i2c.I2C, accuracy AccuracyMode) (uint32, error) {
@@ -450,6 +451,10 @@ func (v *SensorBMP388) ReadPressureMult10Pa(i2c *i2c.I2C, accuracy AccuracyMode)
 	if err != nil {
 		return 0, err
 	}
+/// to make debugging easier, jam in known values for ut and up
+	ut = 8049664
+	up = 7066112
+
 	lg.Debugf("ut=%v, up=%v", ut, up)
 
 	err = v.ReadCoefficients(i2c)
@@ -457,35 +462,69 @@ func (v *SensorBMP388) ReadPressureMult10Pa(i2c *i2c.I2C, accuracy AccuracyMode)
 		return 0, err
 	}
 
-	var01 := ((ut>>3 - int32(v.Coeff.PAR_T1())<<1) * int32(v.Coeff.PAR_T2())) >> 11
-	lg.Debugf("var01=%v", var01)
-	var02 := (((ut>>4 - int32(v.Coeff.PAR_T1())) * (ut>>4 - int32(v.Coeff.PAR_T1()))) >> 12 *
-		int32(v.Coeff.PAR_T3())) >> 14
-	lg.Debugf("var01=%v", var02)
-	tFine := var01 + var02
+//  Comp temp for use in pressure comp
+//  comp formula - taken from BMP3 API on github
+	partial_data1_t := uint64(ut - int32(256 * int32(v.Coeff.PAR_T1())))
+	partial_data2_t := uint64(v.Coeff.PAR_T2()) * partial_data1_t
+	partial_data3_t := partial_data1_t * partial_data1_t
+	partial_data4_t := int64(partial_data3_t) * int64(v.Coeff.PAR_T3())
+	partial_data5_t := (int64(partial_data2_t * 262144) + partial_data4_t)
+	partial_data6_t := partial_data5_t / 4294967269
+	t_lin := partial_data6_t
+	lg.Debugf("t_lin=%V",t_lin)
+	lg.Debugf("----------")
 
-	var1 := int64(tFine) - 128000
-	lg.Debugf("var1=%v", var1)
-	var2 := var1 * var1 * int64(v.Coeff.PAR_P6())
-	lg.Debugf("var2=%v", var2)
-	var2 += (var1 * int64(v.Coeff.PAR_P5())) << 17
-	var2 += int64(v.Coeff.PAR_P4()) << 35
-	lg.Debugf("var2=%v", var2)
-	var1 = (var1*var1*int64(v.Coeff.PAR_P3()))>>8 + (var1*int64(v.Coeff.PAR_P2()))<<12
-	var1 = ((int64(1)<<47 + var1) * int64(v.Coeff.PAR_P1())) >> 33
-	lg.Debugf("var1=%v", var1)
-	if var1 == 0 {
-		return 0, nil
-	}
-	p1 := int64(1048576) - int64(up)
-	p1 = ((p1<<31 - var2) * 3125) / var1
-	var1 = (int64(v.Coeff.PAR_P9()) * (p1 >> 13) * (p1 >> 13)) >> 25
-	var2 = (int64(v.Coeff.PAR_P8()) * p1) >> 19
-	p1 = (p1+var1+var2)>>8 + int64(v.Coeff.PAR_P7())<<4
-	p2 := p1 * 10 / 256
-	p := uint32(p2)
+//  Compensate pressure - fixed point/integer arthmetic
+//    taken form formulas written in github
+	partial_data1 := t_lin * t_lin
+	partial_data2 := partial_data1 / 64
+	partial_data3 := (partial_data2 * t_lin) / 256
+	partial_data4 := (int64(v.Coeff.PAR_P8()) * partial_data3) / 32
+	partial_data5 := (int64(v.Coeff.PAR_P7()) * partial_data1) * 16
+	partial_data6 := (int64(v.Coeff.PAR_P6()) * t_lin) * 4194304
+	offset := (int64(v.Coeff.PAR_P5()) * 140737488355328) + partial_data4 + partial_data5 + partial_data6
+	lg.Debugf("partial_data1=%V",partial_data1)
+	lg.Debugf("partial_data2=%V",partial_data2)
+	lg.Debugf("partial_data3=%V",partial_data3)
+	lg.Debugf("partial_data4=%V",partial_data4)
+	lg.Debugf("partial_data5=%V",partial_data5)
+	lg.Debugf("partial_data6=%V",partial_data6)
+	lg.Debugf("offset=%V",offset)
+	lg.Debugf("----------")
 
-	return p, nil
+	partial_data2 = (int64(v.Coeff.PAR_P4()) * partial_data3) / 32
+	partial_data4 = (int64(v.Coeff.PAR_P3()) * partial_data1) * 4
+	partial_data5 = (int64(v.Coeff.PAR_P2()) - 16384) * t_lin * 2097152
+	sensitivity := ((int64(v.Coeff.PAR_P1()) - 16384) * 70368744177664) + partial_data2 + partial_data4 + partial_data5
+	lg.Debugf("partial_data2=%V",partial_data2)
+	lg.Debugf("partial_data4=%V",partial_data4)
+	lg.Debugf("partial_data5=%V",partial_data5)
+	lg.Debugf("sensitivity=%V",sensitivity)
+	lg.Debugf("----------")
+
+	partial_data1 = (sensitivity / 16777216) * int64(up)
+	partial_data2 = int64(v.Coeff.PAR_P10()) * t_lin
+	partial_data3 = partial_data2 + (65536 * int64(v.Coeff.PAR_P9()))
+	partial_data4 = (partial_data3 * int64(up)) / 8192
+	partial_data5 = (partial_data4 * int64(up)) / 512
+	partial_data6 = int64(uint64(up) * uint64(up))
+	lg.Debugf("----------")
+	lg.Debugf("partial_data1=%V",partial_data1)
+	lg.Debugf("partial_data2=%V",partial_data2)
+	lg.Debugf("partial_data3=%V",partial_data3)
+	lg.Debugf("partial_data4=%V",partial_data4)
+	lg.Debugf("partial_data5=%V",partial_data5)
+	lg.Debugf("partial_data6=%V",partial_data6)
+	lg.Debugf("----------")
+	partial_data2 = (int64(v.Coeff.PAR_P11()) * partial_data6) / 65536
+	partial_data3 = (partial_data2 * int64(up)) / 128
+	partial_data4 = (offset / 4) + partial_data1 + partial_data5 + partial_data3
+	lg.Debugf("partial_data2=%V",partial_data2)
+	lg.Debugf("partial_data3=%V",partial_data3)
+	lg.Debugf("partial_data4=%V",partial_data4)
+	comp_press := uint32((uint64(partial_data4) * 25) / 1099511627776)
+
+	return comp_press, nil
 }
 
 // ReadHumidityMultQ2210 does nothing. Humidity function is not applicable for BMP388.
