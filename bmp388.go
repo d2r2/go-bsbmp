@@ -1,6 +1,7 @@
 //--------------------------------------------------------------------------------------------------
 //
 // Copyright (c) 2018 Denis Dyakov
+//   Portions Copyright (c) 2019 Iron Heart Consulting, LLC
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 // associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -48,15 +49,15 @@ const (
 	BMP388_COEF_START = 0x31
 	BMP388_COEF_BYTES = 21
 	// BMP388 specific 3-byte reading out temprature and preassure
-	BMP388_PRES_OUT_XLSB_LSB_MSB = 0x04
-	BMP388_TEMP_OUT_XLSB_LSB_MSB  = 0x07
+	BMP388_PRES_OUT_MSB_LSB_XLSB = 0x04
+	BMP388_TEMP_OUT_MSB_LSB_XLSB  = 0x07
 
 	BMP388_PWR_MODE_SLEEP  = 0
 	BMP388_PWR_MODE_FORCED = 1
 	BMP388_PWR_MODE_NORMAL = 3
 
 // IIR Filter coefficent 
-	BMP388_coef_0		= 0 	// bypass-mode
+	BMP388_coef_0		= 0		// bypass-mode
 	BMP388_coef_1		= 0
 	BMP388_coef_3		= 0
 	BMP388_coef_7		= 0
@@ -248,17 +249,17 @@ func (v *SensorBMP388) IsValidCoefficients() error {
 	lg.Debugf("PAR_T1:%v",v.Coeff.PAR_T1())
 	lg.Debugf("PAR_T2:%v",v.Coeff.PAR_T2())
 	lg.Debugf("PAR_T3:%v",v.Coeff.PAR_T3())
-	lg.Debugf("PAR_P1:%V",v.Coeff.PAR_P1())
-	lg.Debugf("PAR_P2:%V",v.Coeff.PAR_P2())
-	lg.Debugf("PAR_P3:%V",v.Coeff.PAR_P3())
-	lg.Debugf("PAR_P4:%V",v.Coeff.PAR_P4())
-	lg.Debugf("PAR_P5:%V",v.Coeff.PAR_P5())
-	lg.Debugf("PAR_P6:%V",v.Coeff.PAR_P6())
-	lg.Debugf("PAR_P7:%V",v.Coeff.PAR_P7())
-	lg.Debugf("PAR_P8:%V",v.Coeff.PAR_P8())
-	lg.Debugf("PAR_P9:%V",v.Coeff.PAR_P9())
-	lg.Debugf("PAR_P10:%V",v.Coeff.PAR_P10())
-	lg.Debugf("PAR_P11:%V",v.Coeff.PAR_P11())
+	lg.Debugf("PAR_P1:%v",v.Coeff.PAR_P1())
+	lg.Debugf("PAR_P2:%v",v.Coeff.PAR_P2())
+	lg.Debugf("PAR_P3:%v",v.Coeff.PAR_P3())
+	lg.Debugf("PAR_P4:%v",v.Coeff.PAR_P4())
+	lg.Debugf("PAR_P5:%v",v.Coeff.PAR_P5())
+	lg.Debugf("PAR_P6:%v",v.Coeff.PAR_P6())
+	lg.Debugf("PAR_P7:%v",v.Coeff.PAR_P7())
+	lg.Debugf("PAR_P8:%v",v.Coeff.PAR_P8())
+	lg.Debugf("PAR_P9:%v",v.Coeff.PAR_P9())
+	lg.Debugf("PAR_P10:%v",v.Coeff.PAR_P10())
+	lg.Debugf("PAR_P11:%v",v.Coeff.PAR_P11())
 	return nil
 }
 
@@ -335,8 +336,7 @@ func (v *SensorBMP388) readUncompTemprature(i2c *i2c.I2C, accuracy AccuracyMode)
 	if err != nil {
 		return 0, err
 	}
-//	TODO: change label to agree with correct ordering of 8 bit registers
-	buf, _, err := i2c.ReadRegBytes(BMP388_TEMP_OUT_XLSB_LSB_MSB, 3)
+	buf, _, err := i2c.ReadRegBytes(BMP388_TEMP_OUT_MSB_LSB_XLSB, 3)
 	if err != nil {
 		return 0, err
 	}
@@ -364,7 +364,7 @@ func (v *SensorBMP388) readUncompPressure(i2c *i2c.I2C, accuracy AccuracyMode) (
 	if err != nil {
 		return 0, err
 	}
-	buf, _, err := i2c.ReadRegBytes(BMP388_PRES_OUT_XLSB_LSB_MSB, 3)
+	buf, _, err := i2c.ReadRegBytes(BMP388_PRES_OUT_MSB_LSB_XLSB, 3)
 	if err != nil {
 		return 0, err
 	}
@@ -397,12 +397,12 @@ func (v *SensorBMP388) readUncompTempratureAndPressure(i2c *i2c.I2C,
 	if err != nil {
 		return 0, 0, err
 	}
-	buf, _, err := i2c.ReadRegBytes(BMP388_TEMP_OUT_XLSB_LSB_MSB, 3)
+	buf, _, err := i2c.ReadRegBytes(BMP388_TEMP_OUT_MSB_LSB_XLSB, 3)
 	if err != nil {
 		return 0, 0, err
 	}
 	ut := int32(buf[0]) + int32(buf[1])<<8 + int32(buf[2])<<16
-	buf, _, err = i2c.ReadRegBytes(BMP388_PRES_OUT_XLSB_LSB_MSB, 3)
+	buf, _, err = i2c.ReadRegBytes(BMP388_PRES_OUT_MSB_LSB_XLSB, 3)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -430,7 +430,6 @@ func (v *SensorBMP388) ReadTemperatureMult100C(i2c *i2c.I2C, accuracy AccuracyMo
 	partial_data4 := int64(partial_data3) * int64(v.Coeff.PAR_T3())
 	partial_data5 := (int64(partial_data2 * 262144) + partial_data4)
 	partial_data6 := partial_data5 / 4294967269
-//   TODO: save temp for pressure calc
 	t := int32(partial_data6* 25 / 16384 )
 	lg.Debugf("ut=%v", ut)
 	lg.Debugf("d1=%v ", partial_data1)
@@ -466,7 +465,7 @@ func (v *SensorBMP388) ReadPressureMult10Pa(i2c *i2c.I2C, accuracy AccuracyMode)
 	partial_data5_t := (int64(partial_data2_t * 262144) + partial_data4_t)
 	partial_data6_t := partial_data5_t / 4294967269
 	t_lin := partial_data6_t
-	lg.Debugf("t_lin=%V",t_lin)
+	lg.Debugf("t_lin=%v",t_lin)
 	lg.Debugf("----------")
 
 //  Compensate pressure - fixed point/integer arthmetic
@@ -478,23 +477,23 @@ func (v *SensorBMP388) ReadPressureMult10Pa(i2c *i2c.I2C, accuracy AccuracyMode)
 	partial_data5 := (int64(v.Coeff.PAR_P7()) * partial_data1) * 16
 	partial_data6 := (int64(v.Coeff.PAR_P6()) * t_lin) * 4194304
 	offset := (int64(v.Coeff.PAR_P5()) * 140737488355328) + partial_data4 + partial_data5 + partial_data6
-	lg.Debugf("partial_data1=%V",partial_data1)
-	lg.Debugf("partial_data2=%V",partial_data2)
-	lg.Debugf("partial_data3=%V",partial_data3)
-	lg.Debugf("partial_data4=%V",partial_data4)
-	lg.Debugf("partial_data5=%V",partial_data5)
-	lg.Debugf("partial_data6=%V",partial_data6)
-	lg.Debugf("offset=%V",offset)
+	lg.Debugf("partial_data1=%v",partial_data1)
+	lg.Debugf("partial_data2=%v",partial_data2)
+	lg.Debugf("partial_data3=%v",partial_data3)
+	lg.Debugf("partial_data4=%v",partial_data4)
+	lg.Debugf("partial_data5=%v",partial_data5)
+	lg.Debugf("partial_data6=%v",partial_data6)
+	lg.Debugf("offset=%v",offset)
 	lg.Debugf("----------")
 
 	partial_data2 = (int64(v.Coeff.PAR_P4()) * partial_data3) / 32
 	partial_data4 = (int64(v.Coeff.PAR_P3()) * partial_data1) * 4
 	partial_data5 = (int64(v.Coeff.PAR_P2()) - 16384) * t_lin * 2097152
 	sensitivity := ((int64(v.Coeff.PAR_P1()) - 16384) * 70368744177664) + partial_data2 + partial_data4 + partial_data5
-	lg.Debugf("partial_data2=%V",partial_data2)
-	lg.Debugf("partial_data4=%V",partial_data4)
-	lg.Debugf("partial_data5=%V",partial_data5)
-	lg.Debugf("sensitivity=%V",sensitivity)
+	lg.Debugf("partial_data2=%v",partial_data2)
+	lg.Debugf("partial_data4=%v",partial_data4)
+	lg.Debugf("partial_data5=%v",partial_data5)
+	lg.Debugf("sensitivity=%v",sensitivity)
 	lg.Debugf("----------")
 
 	partial_data1 = (sensitivity / 16777216) * int64(up)
@@ -504,19 +503,19 @@ func (v *SensorBMP388) ReadPressureMult10Pa(i2c *i2c.I2C, accuracy AccuracyMode)
 	partial_data5 = (partial_data4 * int64(up)) / 512
 	partial_data6 = int64(uint64(up) * uint64(up))
 	lg.Debugf("----------")
-	lg.Debugf("partial_data1=%V",partial_data1)
-	lg.Debugf("partial_data2=%V",partial_data2)
-	lg.Debugf("partial_data3=%V",partial_data3)
-	lg.Debugf("partial_data4=%V",partial_data4)
-	lg.Debugf("partial_data5=%V",partial_data5)
-	lg.Debugf("partial_data6=%V",partial_data6)
+	lg.Debugf("partial_data1=%v",partial_data1)
+	lg.Debugf("partial_data2=%v",partial_data2)
+	lg.Debugf("partial_data3=%v",partial_data3)
+	lg.Debugf("partial_data4=%v",partial_data4)
+	lg.Debugf("partial_data5=%v",partial_data5)
+	lg.Debugf("partial_data6=%v",partial_data6)
 	lg.Debugf("----------")
 	partial_data2 = (int64(v.Coeff.PAR_P11()) * partial_data6) / 65536
 	partial_data3 = (partial_data2 * int64(up)) / 128
 	partial_data4 = (offset / 4) + partial_data1 + partial_data5 + partial_data3
-	lg.Debugf("partial_data2=%V",partial_data2)
-	lg.Debugf("partial_data3=%V",partial_data3)
-	lg.Debugf("partial_data4=%V",partial_data4)
+	lg.Debugf("partial_data2=%v",partial_data2)
+	lg.Debugf("partial_data3=%v",partial_data3)
+	lg.Debugf("partial_data4=%v",partial_data4)
 	comp_press := uint32((uint64(partial_data4) * 25) / 1099511627776)
 
 	return comp_press, nil
