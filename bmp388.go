@@ -93,7 +93,6 @@ type CoeffBMP388 struct {
 	COEF_45 uint8
 }
 
-// coef naming uses the nomenclature out of the datasheet
 func (v *CoeffBMP388) PAR_T1() uint16 {
 	return uint16(v.COEF_32)<<8 | uint16(v.COEF_31)
 }
@@ -279,7 +278,7 @@ func (v *SensorBMP388) RecognizeSignature(signature uint8) (string, error) {
 //  BMP388 has three separate busy/done flags - pres, temp, and cmd
 //  this routine is called by a 'waitFor Completion' shared by the other BMP parts, which all have a combined 
 //    busy/done bit.
-//    for now - we return TRUE when any of hte done bits go true
+//    for now - we return TRUE when any of the done bits go true
 //   TODO: break out the busy polling
 func (v *SensorBMP388) IsBusy(i2c *i2c.I2C) (busy bool, err error) {
 	// Check flag to know status of calculation, according

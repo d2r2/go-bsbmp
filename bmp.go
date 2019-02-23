@@ -20,6 +20,13 @@
 //
 //--------------------------------------------------------------------------------------------------
 
+//  go-bsbmp package implements reading sensors values and providing compensating the readings, based on a table of coefficents stored in the device. 
+//   Sensors supported:
+//     BMP180 - Abs Press, Temp. (Not recommeneded for new designs) 
+//     BMP280 - Abs Press, Tewp.
+//     BME280 - ABs Press, Temp, Relative Humidity
+//     BMP388 - Abs Press, Temp.
+//   Note: the BMP300 device was never produced
 package bsbmp
 
 import (
@@ -53,7 +60,7 @@ const (
 	BMP180 SensorType = iota
 	// Bosch Sensortec pressure and temperature sensor model BMP280.
 	BMP280
-	// Bosch Sensortec pressure and temperature sensor model BME280.
+	// Bosch Sensortec pressure, temperature, and relative humidity sensor model BME280.
 	BME280
 	// Bosch Sensortec pressure and temperature sensor model BMP388.
 	BMP388
@@ -209,7 +216,7 @@ func (v *BMP) ReadHumidityRH(accuracy AccuracyMode) (bool, float32, error) {
 }
 
 // ReadAltitude reads and calculates altitude above sea level, if we assume
-// that pressure at see level is equal to 101325 Pa.
+// that pressure at sea level is equal to 101325 Pa.
 func (v *BMP) ReadAltitude(accuracy AccuracyMode) (float32, error) {
 	p, err := v.bmp.ReadPressureMult10Pa(v.i2c, accuracy)
 	if err != nil {
