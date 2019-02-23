@@ -1,4 +1,4 @@
-Bosch Sensortec BMP180, BMP280, BME280 temperature, atmospheric pressure and humidity sensors
+Bosch Sensortec BMP180, BMP280, BME280, BMP388 temperature, atmospheric pressure and humidity sensors
 =============================================================================================
 
 [![Build Status](https://travis-ci.org/d2r2/go-bsbmp.svg?branch=master)](https://travis-ci.org/d2r2/go-bsbmp)
@@ -9,6 +9,8 @@ Bosch Sensortec BMP180, BMP280, BME280 temperature, atmospheric pressure and hum
 BMP180 ([pdf reference](https://raw.github.com/d2r2/go-bsbmp/master/docs/BST-BMP180-DS000-09.pdf)), BMP280 ([pdf reference](https://raw.github.com/d2r2/go-bsbmp/master/docs/BST-BMP280-DS001-11.pdf)) and BME280 ([pdf reference](https://raw.github.com/d2r2/go-bsbmp/master/docs/BST-BME280_DS001-12.pdf)) are populare sensors among Arduino and Raspberry PI developers.
 Sensors are compact and quite accurately measuring, working via i2c bus interface:
 ![image](https://raw.github.com/d2r2/go-bsbmp/master/docs/bmp180_bmp280_bme280_1.jpg)
+
+BMP388 ([pdf reference](https://raw.github.com/d2r2/go-bsbmp/master/docs/BST-BMP388-DS001-11.pdf)) is the next generation of the BMP280.  Improved temperature coefficient, and the addition of a FIFO. Parameters measured are Temperature and Absolute Atmospheric Pressure.
 
 Here is a library written in [Go programming language](https://golang.org/) for Raspberry PI and counterparts, which gives you in the output temperature and atmospheric pressure values (making all necessary i2c-bus interracting and values computing).
 
