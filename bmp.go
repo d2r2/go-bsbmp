@@ -1,6 +1,7 @@
 //--------------------------------------------------------------------------------------------------
 //
 // Copyright (c) 2018 Denis Dyakov
+//    poritons Copyright (c) 2019 Iron Heart Consulting, LLC
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 // associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -19,6 +20,13 @@
 //
 //--------------------------------------------------------------------------------------------------
 
+//  go-bsbmp package implements reading sensors values and providing compensating the readings, based on a table of coefficents stored in the device. 
+//   Sensors supported:
+//     BMP180 - Abs Press, Temp. (Not recommeneded for new designs) 
+//     BMP280 - Abs Press, Tewp.
+//     BME280 - ABs Press, Temp, Relative Humidity
+//     BMP388 - Abs Press, Temp.
+//   Note: the BMP300 device was never produced
 package bsbmp
 
 import (
@@ -40,6 +48,8 @@ func (v SensorType) String() string {
 		return "BMP280"
 	} else if v == BME280 {
 		return "BME280"
+	} else if v == BMP388 {
+		return "BMP388"
 	} else {
 		return "!!! unknown !!!"
 	}
@@ -50,8 +60,10 @@ const (
 	BMP180 SensorType = iota
 	// Bosch Sensortec pressure and temperature sensor model BMP280.
 	BMP280
-	// Bosch Sensortec pressure and temperature sensor model BME280.
+	// Bosch Sensortec pressure, temperature and relative humidity sensor model BME280.
 	BME280
+	// Bosch Sensortec pressure and temperature sensor model BMP388.
+	BMP388
 )
 
 // Accuracy mode for calculation of atmospheric pressure and temprature.
@@ -64,12 +76,13 @@ const (
 	ACCURACY_STANDARD                       // x4 samples
 	ACCURACY_HIGH                           // x8 samples
 	ACCURACY_ULTRA_HIGH                     // x16 samples
+	ACCURACY_HIGHEST			// x32 samples - added in BMP388
 )
 
 // BMPx sensors memory map
-const (
+var (
 	// General registers
-	BMP_ID_REG = 0xD0
+	BMP_ID_REG byte = 0xD0
 )
 
 // Abstract BMPx sensor interface
@@ -110,6 +123,9 @@ func NewBMP(sensorType SensorType, i2c *i2c.I2C) (*BMP, error) {
 		v.bmp = &SensorBMP280{}
 	case BME280:
 		v.bmp = &SensorBME280{}
+	case BMP388:
+		v.bmp = &SensorBMP388{}
+		BMP_ID_REG = 0x00
 	}
 
 	id, err := v.ReadSensorID()
@@ -200,7 +216,7 @@ func (v *BMP) ReadHumidityRH(accuracy AccuracyMode) (bool, float32, error) {
 }
 
 // ReadAltitude reads and calculates altitude above sea level, if we assume
-// that pressure at see level is equal to 101325 Pa.
+// that pressure at sea level is equal to 101325 Pa.
 func (v *BMP) ReadAltitude(accuracy AccuracyMode) (float32, error) {
 	p, err := v.bmp.ReadPressureMult10Pa(v.i2c, accuracy)
 	if err != nil {
