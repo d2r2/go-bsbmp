@@ -108,6 +108,12 @@ to discover address occupied by peripheral device. To install utility you should
 	70: -- -- -- -- -- -- 76 --    
 	```
 
+Contribute authors
+------------------
+
+* [Kevin Rowett](https://github.com/K6TD): new sensor BMP388 support implementation.
+
+
 Contact
 -------
 
