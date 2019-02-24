@@ -60,7 +60,7 @@ const (
 	BMP180 SensorType = iota
 	// Bosch Sensortec pressure and temperature sensor model BMP280.
 	BMP280
-	// Bosch Sensortec pressure, temperature, and relative humidity sensor model BME280.
+	// Bosch Sensortec pressure, temperature and relative humidity sensor model BME280.
 	BME280
 	// Bosch Sensortec pressure and temperature sensor model BMP388.
 	BMP388
@@ -76,13 +76,13 @@ const (
 	ACCURACY_STANDARD                       // x4 samples
 	ACCURACY_HIGH                           // x8 samples
 	ACCURACY_ULTRA_HIGH                     // x16 samples
-	ACCURACY_HIGHEST						// x32 samples - added in BMP388
+	ACCURACY_HIGHEST			// x32 samples - added in BMP388
 )
 
 // BMPx sensors memory map
-var (
+const (
 	// General registers
-	BMP_ID_REG byte = 0xD0
+	BMP_ID_REG = 0xD0
 )
 
 // Abstract BMPx sensor interface
