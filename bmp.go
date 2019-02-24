@@ -80,9 +80,9 @@ const (
 )
 
 // BMPx sensors memory map
-const (
+var (
 	// General registers
-	BMP_ID_REG = 0xD0
+	BMP_ID_REG byte = 0xD0
 )
 
 // Abstract BMPx sensor interface
