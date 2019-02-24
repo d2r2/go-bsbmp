@@ -36,15 +36,15 @@ const (
 	// BMP388 general registers
 	BMP388_STATUS_REG    = 0x03
 	BMP388_ERR_REG		 = 0x02
-//	BMP388_CNTR_MEAS_REG = 0xF4  // No such reg in BMP388
+	//	BMP388_CNTR_MEAS_REG = 0xF4  // No such reg in BMP388
 	BMP388_ODR_REG		 = 0x1D  // Data Rate control
 	BMP388_OSR_REG		 = 0x1D	 // Over sample rate control
 	BMP388_PWR_CTRL_REG	 = 0x1B	// enable/disable press or temp, set operating mode
-// CONFIG Register is used to set IIR Filter coefficent
+	// CONFIG Register is used to set IIR Filter coefficent
 	BMP388_CONFIG        = 0x1F // TODO: support IIR filter settings
-//	BMP388_RESET         = 0xE0 // TODO: '388 doesn't have a reset register
+	//	BMP388_RESET         = 0xE0 // TODO: '388 doesn't have a reset register
 	BMP388_CMD_REG		 = 0x7E
-//  cmds - nop, extmode, clear FIFO, softreset
+	//  cmds - nop, extmode, clear FIFO, softreset
 	// BMP388 specific compensation register's block
 	BMP388_COEF_START = 0x31
 	BMP388_COEF_BYTES = 21
@@ -56,7 +56,7 @@ const (
 	BMP388_PWR_MODE_FORCED = 1
 	BMP388_PWR_MODE_NORMAL = 3
 
-// IIR Filter coefficent 
+	// IIR Filter coefficent 
 	BMP388_coef_0		= 0		// bypass-mode
 	BMP388_coef_1		= 0
 	BMP388_coef_3		= 0
@@ -183,7 +183,7 @@ func (v *SensorBMP388) ReadCoefficients(i2c *i2c.I2C) error {
 // IsValidCoefficients verify that compensate registers
 // are not empty, and thus are valid.
 func (v *SensorBMP388) IsValidCoefficients() error {
-// TODO:  research a better test for valid Coef.  Refeence code doesn't check
+	// TODO:  research a better test for valid Coef.  Refeence code doesn't check
 	if v.Coeff != nil {
 		err := checkCoefficient(uint16(v.Coeff.PAR_T1()), "PAR_T1")
 		if err != nil {
@@ -313,18 +313,18 @@ func (v *SensorBMP388) getOversamplingRation(accuracy AccuracyMode) byte {
 
 // readUncompTemprature reads uncompensated temprature from sensor.
 func (v *SensorBMP388) readUncompTemprature(i2c *i2c.I2C, accuracy AccuracyMode) (int32, error) {
-//  set IIR filter to bypass
+	//  set IIR filter to bypass
 	err := i2c.WriteRegU8(BMP388_CONFIG,BMP388_coef_0<<1)
 	if err != nil {
 		return 0, err
 	}
-//   set over sample rate to 1x
+	//   set over sample rate to 1x
 	osrt := v.getOversamplingRation(accuracy)
 	err = i2c.WriteRegU8(BMP388_OSR_REG,osrt<<3)
 	if err != nil {
 		return 0, err
 	}
-// enable pres and temp measuremeent, start a measurment
+	// enable pres and temp measuremeent, start a measurment
 	var power byte = (BMP388_PWR_MODE_FORCED<<4) | 3 // enable pres, temp, FORCED operating mode
 	lg.Debugf("power=0x%0X", power)
 	err = i2c.WriteRegU8(BMP388_PWR_CTRL_REG,power)
@@ -422,7 +422,7 @@ func (v *SensorBMP388) ReadTemperatureMult100C(i2c *i2c.I2C, accuracy AccuracyMo
 		return 0, err
 	}
 
-//  comp formula - taken from BMP3 API on github
+	//  comp formula - taken from BMP3 API on github
 	partial_data1 := uint64(ut - int32(256 * int32(v.Coeff.PAR_T1())))
 	partial_data2 := uint64(v.Coeff.PAR_T2()) * partial_data1
 	partial_data3 := partial_data1 * partial_data1
@@ -455,8 +455,8 @@ func (v *SensorBMP388) ReadPressureMult10Pa(i2c *i2c.I2C, accuracy AccuracyMode)
 		return 0, err
 	}
 
-//  Comp temp for use in pressure comp
-//  comp formula - taken from BMP3 API on github
+	//  Comp temp for use in pressure comp
+	//  comp formula - taken from BMP3 API on github
 	partial_data1_t := uint64(ut - int32(256 * int32(v.Coeff.PAR_T1())))
 	partial_data2_t := uint64(v.Coeff.PAR_T2()) * partial_data1_t
 	partial_data3_t := partial_data1_t * partial_data1_t
@@ -467,8 +467,8 @@ func (v *SensorBMP388) ReadPressureMult10Pa(i2c *i2c.I2C, accuracy AccuracyMode)
 	lg.Debugf("t_lin=%v",t_lin)
 	lg.Debugf("----------")
 
-//  Compensate pressure - fixed point/integer arthmetic
-//    taken form formulas written in github
+	//  Compensate pressure - fixed point/integer arthmetic
+	//  taken form formulas written in github
 	partial_data1 := t_lin * t_lin
 	partial_data2 := partial_data1 / 64
 	partial_data3 := (partial_data2 * t_lin) / 256
