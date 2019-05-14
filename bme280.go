@@ -174,6 +174,7 @@ var _ SensorInterface = &SensorBME280{}
 
 // ReadCoefficients reads compensation coefficients, unique for each sensor.
 func (v *SensorBME280) ReadCoefficients(i2c *i2c.I2C) error {
+	// read coefficients #1
 	_, err := i2c.WriteBytes([]byte{BME280_COEF_PART1_START})
 	if err != nil {
 		return err
@@ -185,17 +186,19 @@ func (v *SensorBME280) ReadCoefficients(i2c *i2c.I2C) error {
 		return err
 	}
 
-	_, err = i2c.WriteBytes([]byte{BME280_COEF_PART1_START})
+	// read coefficients #2
+	_, err = i2c.WriteBytes([]byte{BME280_COEF_PART2_START})
 	if err != nil {
 		return err
 	}
 	var coef2 [BME280_COEF_PART2_BYTES]byte
-	err = readDataToStruct(i2c, BME280_COEF_PART1_BYTES,
-		binary.LittleEndian, &coef1)
+	err = readDataToStruct(i2c, BME280_COEF_PART2_BYTES,
+		binary.LittleEndian, &coef2)
 	if err != nil {
 		return err
 	}
 
+	// read coefficients #3
 	_, err = i2c.WriteBytes([]byte{BME280_COEF_PART3_START})
 	if err != nil {
 		return err
@@ -207,6 +210,7 @@ func (v *SensorBME280) ReadCoefficients(i2c *i2c.I2C) error {
 		return err
 	}
 
+	// combine coefficients altogether in single structure
 	arr := coef1[:]
 	arr = append(arr, coef2[:]...)
 	arr = append(arr, coef3[:]...)
