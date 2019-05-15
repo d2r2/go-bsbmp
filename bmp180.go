@@ -33,6 +33,7 @@ import (
 // BMP180 sensors memory map
 const (
 	// BMP180 general registers
+	BMP180_ID_REG        = 0xD0
 	BMP180_CNTR_MEAS_REG = 0xF4
 	BMP180_RESET         = 0xE0
 	// BMP180 specific compensation register's block
@@ -121,6 +122,16 @@ type SensorBMP180 struct {
 // Static cast to verify at compile time
 // that type implement interface.
 var _ SensorInterface = &SensorBMP180{}
+
+// ReadSensorID reads sensor signature. It may be used for validation,
+// that proper code settings used for sensor data decoding.
+func (v *SensorBMP180) ReadSensorID(i2c *i2c.I2C) (uint8, error) {
+	id, err := i2c.ReadRegU8(BMP180_ID_REG)
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
+}
 
 // ReadCoefficients reads compensation coefficients, unique for each sensor.
 func (v *SensorBMP180) ReadCoefficients(i2c *i2c.I2C) error {
@@ -252,6 +263,9 @@ func (v *SensorBMP180) getOversamplingRation(accuracy AccuracyMode) byte {
 		b = 2
 	case ACCURACY_ULTRA_HIGH:
 		b = 3
+	default:
+		// assign accuracy to lowest resolution by default
+		b = 0
 	}
 	return b
 }

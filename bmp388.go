@@ -34,37 +34,38 @@ import (
 // BMP388 sensors memory map
 const (
 	// BMP388 general registers
-	BMP388_STATUS_REG    = 0x03
-	BMP388_ERR_REG		 = 0x02
+	BMP388_ID_REG     = 0x00
+	BMP388_STATUS_REG = 0x03
+	BMP388_ERR_REG    = 0x02
 	//	BMP388_CNTR_MEAS_REG = 0xF4  // No such reg in BMP388
-	BMP388_ODR_REG		 = 0x1D  // Data Rate control
-	BMP388_OSR_REG		 = 0x1D	 // Over sample rate control
-	BMP388_PWR_CTRL_REG	 = 0x1B	// enable/disable press or temp, set operating mode
+	BMP388_ODR_REG      = 0x1D // Data Rate control
+	BMP388_OSR_REG      = 0x1D // Over sample rate control
+	BMP388_PWR_CTRL_REG = 0x1B // enable/disable press or temp, set operating mode
 	// CONFIG Register is used to set IIR Filter coefficent
-	BMP388_CONFIG        = 0x1F // TODO: support IIR filter settings
+	BMP388_CONFIG = 0x1F // TODO: support IIR filter settings
 	//	BMP388_RESET         = 0xE0 // TODO: '388 doesn't have a reset register
-	BMP388_CMD_REG		 = 0x7E
+	BMP388_CMD_REG = 0x7E
 	//  cmds - nop, extmode, clear FIFO, softreset
 	// BMP388 specific compensation register's block
 	BMP388_COEF_START = 0x31
 	BMP388_COEF_BYTES = 21
 	// BMP388 specific 3-byte reading out temprature and preassure
 	BMP388_PRES_OUT_MSB_LSB_XLSB = 0x04
-	BMP388_TEMP_OUT_MSB_LSB_XLSB  = 0x07
+	BMP388_TEMP_OUT_MSB_LSB_XLSB = 0x07
 
 	BMP388_PWR_MODE_SLEEP  = 0
 	BMP388_PWR_MODE_FORCED = 1
 	BMP388_PWR_MODE_NORMAL = 3
 
-	// IIR Filter coefficent 
-	BMP388_coef_0		= 0		// bypass-mode
-	BMP388_coef_1		= 0
-	BMP388_coef_3		= 0
-	BMP388_coef_7		= 0
-	BMP388_coef_15		= 0
-	BMP388_coef_31		= 0
-	BMP388_coef_63		= 0
-	BMP388_coef_127		= 0
+	// IIR Filter coefficent
+	BMP388_coef_0   = 0 // bypass-mode
+	BMP388_coef_1   = 0
+	BMP388_coef_3   = 0
+	BMP388_coef_7   = 0
+	BMP388_coef_15  = 0
+	BMP388_coef_31  = 0
+	BMP388_coef_63  = 0
+	BMP388_coef_127 = 0
 )
 
 // Unique BMP388 calibration coefficients
@@ -158,6 +159,16 @@ type SensorBMP388 struct {
 // that type implement interface.
 var _ SensorInterface = &SensorBMP388{}
 
+// ReadSensorID reads sensor signature. It may be used for validation,
+// that proper code settings used for sensor data decoding.
+func (v *SensorBMP388) ReadSensorID(i2c *i2c.I2C) (uint8, error) {
+	id, err := i2c.ReadRegU8(BMP388_ID_REG)
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
 // ReadCoefficients reads compensation coefficients, unique for each sensor.
 func (v *SensorBMP388) ReadCoefficients(i2c *i2c.I2C) error {
 	_, err := i2c.WriteBytes([]byte{BMP388_COEF_START})
@@ -209,10 +220,10 @@ func (v *SensorBMP388) IsValidCoefficients() error {
 		if err != nil {
 			return err
 		}
-//		err = checkCoefficient(uint16(v.Coeff.PAR_P4()), "PAR_P4")
-//		if err != nil {
-//			return err
-//		}
+		//		err = checkCoefficient(uint16(v.Coeff.PAR_P4()), "PAR_P4")
+		//		if err != nil {
+		//			return err
+		//		}
 		err = checkCoefficient(uint16(v.Coeff.PAR_P5()), "PAR_P5")
 		if err != nil {
 			return err
@@ -245,20 +256,20 @@ func (v *SensorBMP388) IsValidCoefficients() error {
 		err := errors.New("CoeffBMP388 struct does not build")
 		return err
 	}
-	lg.Debugf("PAR_T1:%v",v.Coeff.PAR_T1())
-	lg.Debugf("PAR_T2:%v",v.Coeff.PAR_T2())
-	lg.Debugf("PAR_T3:%v",v.Coeff.PAR_T3())
-	lg.Debugf("PAR_P1:%v",v.Coeff.PAR_P1())
-	lg.Debugf("PAR_P2:%v",v.Coeff.PAR_P2())
-	lg.Debugf("PAR_P3:%v",v.Coeff.PAR_P3())
-	lg.Debugf("PAR_P4:%v",v.Coeff.PAR_P4())
-	lg.Debugf("PAR_P5:%v",v.Coeff.PAR_P5())
-	lg.Debugf("PAR_P6:%v",v.Coeff.PAR_P6())
-	lg.Debugf("PAR_P7:%v",v.Coeff.PAR_P7())
-	lg.Debugf("PAR_P8:%v",v.Coeff.PAR_P8())
-	lg.Debugf("PAR_P9:%v",v.Coeff.PAR_P9())
-	lg.Debugf("PAR_P10:%v",v.Coeff.PAR_P10())
-	lg.Debugf("PAR_P11:%v",v.Coeff.PAR_P11())
+	lg.Debugf("PAR_T1:%v", v.Coeff.PAR_T1())
+	lg.Debugf("PAR_T2:%v", v.Coeff.PAR_T2())
+	lg.Debugf("PAR_T3:%v", v.Coeff.PAR_T3())
+	lg.Debugf("PAR_P1:%v", v.Coeff.PAR_P1())
+	lg.Debugf("PAR_P2:%v", v.Coeff.PAR_P2())
+	lg.Debugf("PAR_P3:%v", v.Coeff.PAR_P3())
+	lg.Debugf("PAR_P4:%v", v.Coeff.PAR_P4())
+	lg.Debugf("PAR_P5:%v", v.Coeff.PAR_P5())
+	lg.Debugf("PAR_P6:%v", v.Coeff.PAR_P6())
+	lg.Debugf("PAR_P7:%v", v.Coeff.PAR_P7())
+	lg.Debugf("PAR_P8:%v", v.Coeff.PAR_P8())
+	lg.Debugf("PAR_P9:%v", v.Coeff.PAR_P9())
+	lg.Debugf("PAR_P10:%v", v.Coeff.PAR_P10())
+	lg.Debugf("PAR_P11:%v", v.Coeff.PAR_P11())
 	return nil
 }
 
@@ -276,7 +287,7 @@ func (v *SensorBMP388) RecognizeSignature(signature uint8) (string, error) {
 // IsBusy reads register 0xF3 for "busy" flag,
 // according to sensor specification.
 //  BMP388 has three separate busy/done flags - pres, temp, and cmd
-//  this routine is called by a 'waitFor Completion' shared by the other BMP parts, which all have a combined 
+//  this routine is called by a 'waitFor Completion' shared by the other BMP parts, which all have a combined
 //    busy/done bit.
 //    for now - we return TRUE when any of the done bits go true
 //   TODO: break out the busy polling
@@ -288,7 +299,7 @@ func (v *SensorBMP388) IsBusy(i2c *i2c.I2C) (busy bool, err error) {
 		return false, err
 	}
 	lg.Debugf("Busy flag=0x%0X", b)
-	b = b & 0x60   // ignore cmd done
+	b = b & 0x60 // ignore cmd done
 	return b == 0, nil
 }
 
@@ -307,6 +318,9 @@ func (v *SensorBMP388) getOversamplingRation(accuracy AccuracyMode) byte {
 		b = 4
 	case ACCURACY_HIGHEST:
 		b = 5
+	default:
+		// assign accuracy to lowest resolution by default
+		b = 0
 	}
 	return b
 }
@@ -314,20 +328,20 @@ func (v *SensorBMP388) getOversamplingRation(accuracy AccuracyMode) byte {
 // readUncompTemprature reads uncompensated temprature from sensor.
 func (v *SensorBMP388) readUncompTemprature(i2c *i2c.I2C, accuracy AccuracyMode) (int32, error) {
 	//  set IIR filter to bypass
-	err := i2c.WriteRegU8(BMP388_CONFIG,BMP388_coef_0<<1)
+	err := i2c.WriteRegU8(BMP388_CONFIG, BMP388_coef_0<<1)
 	if err != nil {
 		return 0, err
 	}
 	//   set over sample rate to 1x
 	osrt := v.getOversamplingRation(accuracy)
-	err = i2c.WriteRegU8(BMP388_OSR_REG,osrt<<3)
+	err = i2c.WriteRegU8(BMP388_OSR_REG, osrt<<3)
 	if err != nil {
 		return 0, err
 	}
 	// enable pres and temp measuremeent, start a measurment
-	var power byte = (BMP388_PWR_MODE_FORCED<<4) | 3 // enable pres, temp, FORCED operating mode
+	var power byte = (BMP388_PWR_MODE_FORCED << 4) | 3 // enable pres, temp, FORCED operating mode
 	lg.Debugf("power=0x%0X", power)
-	err = i2c.WriteRegU8(BMP388_PWR_CTRL_REG,power)
+	err = i2c.WriteRegU8(BMP388_PWR_CTRL_REG, power)
 	if err != nil {
 		return 0, err
 	}
@@ -345,8 +359,8 @@ func (v *SensorBMP388) readUncompTemprature(i2c *i2c.I2C, accuracy AccuracyMode)
 
 // readUncompPressure reads atmospheric uncompensated pressure from sensor.
 func (v *SensorBMP388) readUncompPressure(i2c *i2c.I2C, accuracy AccuracyMode) (int32, error) {
-	var power byte = (BMP388_PWR_MODE_FORCED<<4) | 3 // enable pres, temp, FORCED operating mode
-	err := i2c.WriteRegU8(BMP388_PWR_CTRL_REG,power)
+	var power byte = (BMP388_PWR_MODE_FORCED << 4) | 3 // enable pres, temp, FORCED operating mode
+	err := i2c.WriteRegU8(BMP388_PWR_CTRL_REG, power)
 	if err != nil {
 		return 0, err
 	}
@@ -377,8 +391,8 @@ func (v *SensorBMP388) readUncompPressure(i2c *i2c.I2C, accuracy AccuracyMode) (
 // BMP180 - doesn't.
 func (v *SensorBMP388) readUncompTempratureAndPressure(i2c *i2c.I2C,
 	accuracy AccuracyMode) (temprature int32, pressure int32, err error) {
-	var power byte = (BMP388_PWR_MODE_FORCED<<4) | 3 // enable pres, temp, FORCED operating mode
-	err = i2c.WriteRegU8(BMP388_PWR_CTRL_REG,power)
+	var power byte = (BMP388_PWR_MODE_FORCED << 4) | 3 // enable pres, temp, FORCED operating mode
+	err = i2c.WriteRegU8(BMP388_PWR_CTRL_REG, power)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -423,13 +437,13 @@ func (v *SensorBMP388) ReadTemperatureMult100C(i2c *i2c.I2C, accuracy AccuracyMo
 	}
 
 	//  comp formula - taken from BMP3 API on github
-	partial_data1 := uint64(ut - int32(256 * int32(v.Coeff.PAR_T1())))
+	partial_data1 := uint64(ut - int32(256*int32(v.Coeff.PAR_T1())))
 	partial_data2 := uint64(v.Coeff.PAR_T2()) * partial_data1
 	partial_data3 := partial_data1 * partial_data1
 	partial_data4 := int64(partial_data3) * int64(v.Coeff.PAR_T3())
-	partial_data5 := (int64(partial_data2 * 262144) + partial_data4)
+	partial_data5 := (int64(partial_data2*262144) + partial_data4)
 	partial_data6 := partial_data5 / 4294967269
-	t := int32(partial_data6* 25 / 16384 )
+	t := int32(partial_data6 * 25 / 16384)
 	lg.Debugf("ut=%v", ut)
 	lg.Debugf("d1=%v ", partial_data1)
 	lg.Debugf("p_d2=%v ", partial_data2)
@@ -457,14 +471,14 @@ func (v *SensorBMP388) ReadPressureMult10Pa(i2c *i2c.I2C, accuracy AccuracyMode)
 
 	//  Comp temp for use in pressure comp
 	//  comp formula - taken from BMP3 API on github
-	partial_data1_t := uint64(ut - int32(256 * int32(v.Coeff.PAR_T1())))
+	partial_data1_t := uint64(ut - int32(256*int32(v.Coeff.PAR_T1())))
 	partial_data2_t := uint64(v.Coeff.PAR_T2()) * partial_data1_t
 	partial_data3_t := partial_data1_t * partial_data1_t
 	partial_data4_t := int64(partial_data3_t) * int64(v.Coeff.PAR_T3())
-	partial_data5_t := (int64(partial_data2_t * 262144) + partial_data4_t)
+	partial_data5_t := (int64(partial_data2_t*262144) + partial_data4_t)
 	partial_data6_t := partial_data5_t / 4294967269
 	t_lin := partial_data6_t
-	lg.Debugf("t_lin=%v",t_lin)
+	lg.Debugf("t_lin=%v", t_lin)
 	lg.Debugf("----------")
 
 	//  Compensate pressure - fixed point/integer arthmetic
@@ -476,23 +490,23 @@ func (v *SensorBMP388) ReadPressureMult10Pa(i2c *i2c.I2C, accuracy AccuracyMode)
 	partial_data5 := (int64(v.Coeff.PAR_P7()) * partial_data1) * 16
 	partial_data6 := (int64(v.Coeff.PAR_P6()) * t_lin) * 4194304
 	offset := (int64(v.Coeff.PAR_P5()) * 140737488355328) + partial_data4 + partial_data5 + partial_data6
-	lg.Debugf("partial_data1=%v",partial_data1)
-	lg.Debugf("partial_data2=%v",partial_data2)
-	lg.Debugf("partial_data3=%v",partial_data3)
-	lg.Debugf("partial_data4=%v",partial_data4)
-	lg.Debugf("partial_data5=%v",partial_data5)
-	lg.Debugf("partial_data6=%v",partial_data6)
-	lg.Debugf("offset=%v",offset)
+	lg.Debugf("partial_data1=%v", partial_data1)
+	lg.Debugf("partial_data2=%v", partial_data2)
+	lg.Debugf("partial_data3=%v", partial_data3)
+	lg.Debugf("partial_data4=%v", partial_data4)
+	lg.Debugf("partial_data5=%v", partial_data5)
+	lg.Debugf("partial_data6=%v", partial_data6)
+	lg.Debugf("offset=%v", offset)
 	lg.Debugf("----------")
 
 	partial_data2 = (int64(v.Coeff.PAR_P4()) * partial_data3) / 32
 	partial_data4 = (int64(v.Coeff.PAR_P3()) * partial_data1) * 4
 	partial_data5 = (int64(v.Coeff.PAR_P2()) - 16384) * t_lin * 2097152
 	sensitivity := ((int64(v.Coeff.PAR_P1()) - 16384) * 70368744177664) + partial_data2 + partial_data4 + partial_data5
-	lg.Debugf("partial_data2=%v",partial_data2)
-	lg.Debugf("partial_data4=%v",partial_data4)
-	lg.Debugf("partial_data5=%v",partial_data5)
-	lg.Debugf("sensitivity=%v",sensitivity)
+	lg.Debugf("partial_data2=%v", partial_data2)
+	lg.Debugf("partial_data4=%v", partial_data4)
+	lg.Debugf("partial_data5=%v", partial_data5)
+	lg.Debugf("sensitivity=%v", sensitivity)
 	lg.Debugf("----------")
 
 	partial_data1 = (sensitivity / 16777216) * int64(up)
@@ -502,19 +516,19 @@ func (v *SensorBMP388) ReadPressureMult10Pa(i2c *i2c.I2C, accuracy AccuracyMode)
 	partial_data5 = (partial_data4 * int64(up)) / 512
 	partial_data6 = int64(uint64(up) * uint64(up))
 	lg.Debugf("----------")
-	lg.Debugf("partial_data1=%v",partial_data1)
-	lg.Debugf("partial_data2=%v",partial_data2)
-	lg.Debugf("partial_data3=%v",partial_data3)
-	lg.Debugf("partial_data4=%v",partial_data4)
-	lg.Debugf("partial_data5=%v",partial_data5)
-	lg.Debugf("partial_data6=%v",partial_data6)
+	lg.Debugf("partial_data1=%v", partial_data1)
+	lg.Debugf("partial_data2=%v", partial_data2)
+	lg.Debugf("partial_data3=%v", partial_data3)
+	lg.Debugf("partial_data4=%v", partial_data4)
+	lg.Debugf("partial_data5=%v", partial_data5)
+	lg.Debugf("partial_data6=%v", partial_data6)
 	lg.Debugf("----------")
 	partial_data2 = (int64(v.Coeff.PAR_P11()) * partial_data6) / 65536
 	partial_data3 = (partial_data2 * int64(up)) / 128
 	partial_data4 = (offset / 4) + partial_data1 + partial_data5 + partial_data3
-	lg.Debugf("partial_data2=%v",partial_data2)
-	lg.Debugf("partial_data3=%v",partial_data3)
-	lg.Debugf("partial_data4=%v",partial_data4)
+	lg.Debugf("partial_data2=%v", partial_data2)
+	lg.Debugf("partial_data3=%v", partial_data3)
+	lg.Debugf("partial_data4=%v", partial_data4)
 	comp_press := uint32((uint64(partial_data4) * 25) / 1099511627776)
 
 	return comp_press, nil

@@ -29,9 +29,10 @@ func main() {
 	logger.ChangePackageLogLevel("i2c", logger.InfoLevel)
 	logger.ChangePackageLogLevel("bsbmp", logger.InfoLevel)
 
-	// sensor, err := bsbmp.NewBMP(bsbmp.BMP180, i2c)
-	sensor, err := bsbmp.NewBMP(bsbmp.BMP280, i2c)
-	// sensor, err := bsbmp.NewBMP(bsbmp.BME280, i2c)
+	// sensor, err := bsbmp.NewBMP(bsbmp.BMP180, i2c) // signature=0x55
+	sensor, err := bsbmp.NewBMP(bsbmp.BMP280, i2c) // signature=0x58
+	// sensor, err := bsbmp.NewBMP(bsbmp.BME280, i2c) // signature=0x60
+	// sensor, err := bsbmp.NewBMP(bsbmp.BMP388, i2c) // signature=0x50
 	if err != nil {
 		lg.Fatal(err)
 	}

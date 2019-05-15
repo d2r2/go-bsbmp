@@ -20,9 +20,9 @@
 //
 //--------------------------------------------------------------------------------------------------
 
-//  go-bsbmp package implements reading sensors values and providing compensating the readings, based on a table of coefficents stored in the device. 
+//  go-bsbmp package implements reading sensors values and providing compensating the readings, based on a table of coefficents stored in the device.
 //   Sensors supported:
-//     BMP180 - Abs Press, Temp. (Not recommeneded for new designs) 
+//     BMP180 - Abs Press, Temp. (Not recommeneded for new designs)
 //     BMP280 - Abs Press, Tewp.
 //     BME280 - ABs Press, Temp, Relative Humidity
 //     BMP388 - Abs Press, Temp.
@@ -76,18 +76,14 @@ const (
 	ACCURACY_STANDARD                       // x4 samples
 	ACCURACY_HIGH                           // x8 samples
 	ACCURACY_ULTRA_HIGH                     // x16 samples
-	ACCURACY_HIGHEST			// x32 samples - added in BMP388
-)
-
-// BMPx sensors memory map
-var (
-	// General registers
-	BMP_ID_REG byte = 0xD0
+	ACCURACY_HIGHEST                        // x32 samples - added in BMP388
 )
 
 // Abstract BMPx sensor interface
 // to control and gather data.
 type SensorInterface interface {
+	// ReadSensorID read sensor identifier unuque for each sensor type.
+	ReadSensorID(i2c *i2c.I2C) (uint8, error)
 	// ReadCoefficients read coefficient's block unique for each sensor.
 	ReadCoefficients(i2c *i2c.I2C) error
 	// IsValidCoefficients verify that coefficient values are not empty.
@@ -125,7 +121,6 @@ func NewBMP(sensorType SensorType, i2c *i2c.I2C) (*BMP, error) {
 		v.bmp = &SensorBME280{}
 	case BMP388:
 		v.bmp = &SensorBMP388{}
-		BMP_ID_REG = 0x00
 	}
 
 	id, err := v.ReadSensorID()
@@ -146,11 +141,8 @@ func NewBMP(sensorType SensorType, i2c *i2c.I2C) (*BMP, error) {
 // ReadSensorID reads sensor signature. It may be used for validation,
 // that proper code settings used for sensor data decoding.
 func (v *BMP) ReadSensorID() (uint8, error) {
-	id, err := v.i2c.ReadRegU8(BMP_ID_REG)
-	if err != nil {
-		return 0, err
-	}
-	return id, nil
+	id, err := v.bmp.ReadSensorID(v.i2c)
+	return id, err
 }
 
 func (v *BMP) IsValidCoefficients() error {

@@ -33,6 +33,7 @@ import (
 // BME280 sensors memory map
 const (
 	// BME280 general registers
+	BME280_ID_REG    = 0xD0
 	BME280_CTRL_HUM  = 0xF2
 	BME280_STATUS    = 0xF3
 	BME280_CTRL_MEAS = 0xF4
@@ -171,6 +172,16 @@ type SensorBME280 struct {
 // Static cast to verify at compile time
 // that type implement interface.
 var _ SensorInterface = &SensorBME280{}
+
+// ReadSensorID reads sensor signature. It may be used for validation,
+// that proper code settings used for sensor data decoding.
+func (v *SensorBME280) ReadSensorID(i2c *i2c.I2C) (uint8, error) {
+	id, err := i2c.ReadRegU8(BME280_ID_REG)
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
+}
 
 // ReadCoefficients reads compensation coefficients, unique for each sensor.
 func (v *SensorBME280) ReadCoefficients(i2c *i2c.I2C) error {
@@ -321,6 +332,9 @@ func (v *SensorBME280) getOversamplingRation(accuracy AccuracyMode) byte {
 		b = 4
 	case ACCURACY_ULTRA_HIGH:
 		b = 5
+	default:
+		// assign accuracy to lowest resolution by default
+		b = 1
 	}
 	return b
 }

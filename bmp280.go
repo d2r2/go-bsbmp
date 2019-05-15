@@ -33,6 +33,7 @@ import (
 // BMP280 sensors memory map
 const (
 	// BMP280 general registers
+	BMP280_ID_REG        = 0xD0
 	BMP280_STATUS_REG    = 0xF3
 	BMP280_CNTR_MEAS_REG = 0xF4
 	BMP280_CONFIG        = 0xF5 // TODO: support IIR filter settings
@@ -130,6 +131,16 @@ type SensorBMP280 struct {
 // Static cast to verify at compile time
 // that type implement interface.
 var _ SensorInterface = &SensorBMP280{}
+
+// ReadSensorID reads sensor signature. It may be used for validation,
+// that proper code settings used for sensor data decoding.
+func (v *SensorBMP280) ReadSensorID(i2c *i2c.I2C) (uint8, error) {
+	id, err := i2c.ReadRegU8(BMP280_ID_REG)
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
+}
 
 // ReadCoefficients reads compensation coefficients, unique for each sensor.
 func (v *SensorBMP280) ReadCoefficients(i2c *i2c.I2C) error {
@@ -252,6 +263,9 @@ func (v *SensorBMP280) getOversamplingRation(accuracy AccuracyMode) byte {
 		b = 4
 	case ACCURACY_ULTRA_HIGH:
 		b = 5
+	default:
+		// assign accuracy to lowest resolution by default
+		b = 1
 	}
 	return b
 }
